@@ -80,8 +80,9 @@ verbose = 1
 clf = HMM(K=K, max_iter=max_iter, verbose=verbose, log_interval=log_interval)
 clf = clf.fit(df_train.values)
 
+
 print("Log-likelihood at convergence on train %.3f" % clf.lc)
-print("Log-likelihood on test")
+print("Log-likelihood on test %.3f" % clf._get_lc(df_test.values, clf.predict(df_test.values)))
 
 fig, ax = plt.subplots(nrows=1, ncols=1)
 plot_clusters(df_train.values, clf.mu, clf.labels, ax=ax)

@@ -61,8 +61,21 @@ We deduce the following updates of the parameters $\theta$ in the M step at $n^{
 \end{equation*}\normalsize
 
 where $p_{n-1}(t,k) =  p_{\theta_{n-1}}(q_t{=}k|u_{1\dots T})$, $p_{n-1}(t,k,l) =  p_{\theta_{n-1}}(q_{t-1}{=}k,
-q_t{=}l|u_{1\dots T})$. The calculation of conditional distributions in the formulas have been implemented in question \textbf{1.1}.
+q_t{=}l|u_{1\dots T})$. The calculation of conditional distributions in the formulas have been implemented in question
+\textbf{1.1}.
 
+\begin{figure}[!h]
+  \hspace*{\fill}%
+  \includegraphics[width=7cm]{em_full.png}\hfill%
+  \includegraphics[width=7cm]{hmm.png}%
+  \hspace*{\fill}%
+  \label{fig:comparison}
+\end{figure}
+
+\textbf{1.5} We see that contrary to GMM model, HMM model may assign a point to a cluster whose center is not the
+closest (whatever the distance on $\mathbb{R}^2$). However the overall fit with HMM is better as the complete log-likelihood is lower both on 
+the train set (-1,555.92 vs -2,345.97) and the test set (-1,636.79 vs -2,425.99). We also see that the parameters $\mu$ and $\Sigma$ learned by
+GMM and HMM models are very similar.
 \end{document}
 
 

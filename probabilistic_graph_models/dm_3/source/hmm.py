@@ -62,11 +62,11 @@ class HMM(object):
         self.labels = np.zeros(T)
 
         # Initialize theta parameters for EM algorithm
-        self._init_parameters(U, T)
+        self._init_parameters(U)
 
         # Initial complete log likelihood
         self.list_lc = [-np.inf]
-        self.lc = self._get_lc(U)
+        self.lc = self._get_lc(U, self.labels)
 
         if self.verbose > 0:
             print("Initial log-likelihood with parameters from GMM and uniform transition matrix %.3f" % self.lc)
@@ -93,10 +93,12 @@ class HMM(object):
             self._update_A(U)
             self._update_pi(U)
 
+            # Compute most probable state using Viberti algorithm
+            self.labels = self._viberti(U)
+
             # Compute complete likelihood
-            self.labels = np.argmax(self.p_single, axis=1)
             self.list_lc.append(self.lc)
-            self.lc = self._get_lc(U)
+            self.lc = self._get_lc(U, self.labels)
             n_iter += 1
 
             if self.verbose > 0 and n_iter % self.log_interval == 0:
@@ -174,7 +176,8 @@ class HMM(object):
             self.log_beta[t, q] = self._log_plus([self._log_psi_q_u(r, U[t+1]) + np.log(self.A[q, r]) + \
                                                  self.log_beta[t+1,r] for r in range(self.K)])
 
-    def _init_parameters(self, U, T):
+    def _init_parameters(self, U):
+        T, d = U.shape
         # Gaussian Mixture Model with full covariance
         clf = FullGMM(k=self.K, max_iter=self.max_iter) 
         clf.fit(U)
@@ -189,14 +192,44 @@ class HMM(object):
         if self.verbose > 0:
             print("Initialization of parameters with mixture of Gaussian models complete...")
 
-    def _get_lc(self, U):
+    def _viberti(self, U):
         T, d = U.shape
-        lc = np.log(self.pi[self.labels[0]])
+        # p[k,t] stores probability of most likely state (q_1, ..., q_t-1, q_t=k) for obs u_1, ..., u_t
+        # arg[k,t] stores the argmax over k of that probability expressed recursively with p[q, t-1]
+        log_p = np.zeros((self.K, T))
+        arg = np.zeros((self.K, T)).astype(int)
+
+        # Initialize
+        for k in range(self.K):
+            log_p[k, 0] = np.log(self.pi[k]) + self._log_psi_q_u(k, U[0])
+            arg[k, 0] = 0
+
+        # Use recursive formula
+        # p[k,t] = max_x psi_q_u(k,U[t]) A[x, k] p[x, t-1]
         for t in range(1, T):
-            lc += np.log(self.A[self.labels[t-1], self.labels[t]])
+            for k in range(self.K):
+                tmp = [log_p[x, t-1] + np.log(self.A[x, k]) + self._log_psi_q_u(k, U[t]) for x in range(self.K)]
+                log_p[k, t] = max(tmp)
+                arg[k, t] = np.argmax(tmp)
+
+        labels = np.zeros(T).astype(int)
+        labels[T-1] = np.argmax(log_p[:, T-1])
+        for t in reversed(range(T-1)):
+            labels[t] = arg[labels[t+1], t+1]
+
+        return labels
+
+    def _get_lc(self, U, labels):
+        T, d = U.shape
+        lc = np.log(self.pi[labels[0]])
+        for t in range(1, T):
+            lc += np.log(self.A[labels[t-1], labels[t]])
         for t in range(T):
-            mu = self.mu[self.labels[t]]
-            Sigma = self.Sigma[self.labels[t]]
+            mu = self.mu[labels[t]]
+            Sigma = self.Sigma[labels[t]]
             lc += -d/2.*np.log(np.pi) - 1/2.*np.log(np.linalg.det(Sigma)) - \
                    1/2.*(U[t]-mu).dot(np.linalg.inv(Sigma)).dot(U[t]-mu)
         return lc
+
+    def predict(self, U):
+        return self._viberti(U)
