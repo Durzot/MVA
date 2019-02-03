@@ -1,0 +1,41 @@
+[train epoch 1/120] | nw acc 0.0212
+cat 0: [1256, 117, 153, 111] and [0.7672571777642028, 0.07147220525351253, 0.09346365302382406, 0.0678069639584606]
+cat 1: [112, 1804, 334, 594] and [0.03938115330520394, 0.6343178621659634, 0.11744022503516174, 0.2088607594936709]
+cat 2: [0, 0, 0, 0] and [0, 0, 0, 0]
+cat 3: [101, 519, 348, 2107] and [0.03284552845528455, 0.16878048780487806, 0.11317073170731708, 0.6852032520325203]
+[train epoch 1/120] | nw acc 0.0212
+cat 0: [1256, 117, 153, 111] and ['0.7673', '0.0715', '0.0935', '0.0678']
+cat 1: [112, 1804, 334, 594] and ['0.0394', '0.6343', '0.1174', '0.2089']
+cat 2: [0, 0, 0, 0] and ['0.0000', '0.0000', '0.0000', '0.0000']
+cat 3: [101, 519, 348, 2107] and ['0.0328', '0.1688', '0.1132', '0.6852']
+[test epoch 1/120] | nw acc 0.384
+cat 0: [0, 20, 41, 32] and ['0.0000', '0.2151', '0.4409', '0.3441']
+cat 1: [0, 62, 37, 75] and ['0.0000', '0.3563', '0.2126', '0.4310']
+cat 2: [0, 0, 0, 0] and ['0.0000', '0.0000', '0.0000', '0.0000']
+cat 3: [0, 655, 293, 675] and ['0.0000', '0.4036', '0.1805', '0.4159']
+MaunaNet4(
+  (conv1): Conv2d(1, 3, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+  (bn1): BatchNorm2d(3, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (pool1): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+  (conv2): Conv2d(3, 64, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+  (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (pool2): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+  (conv3): Conv2d(64, 128, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+  (bn3): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (pool3): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+  (conv4): Conv2d(128, 1024, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+  (bn4): BatchNorm2d(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+  (pool4): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+  (avgpool): AvgPool2d(kernel_size=2, stride=2, padding=0)
+  (fc1): Linear(in_features=1024, out_features=4, bias=True)
+)
+[train epoch 1/120] | nw acc 0 | time 0 min 1 sec
+cat 0: [0, 0, 0, 0] and ['0.0000', '0.0000', '0.0000', '0.0000']
+cat 1: [0, 0, 0, 0] and ['0.0000', '0.0000', '0.0000', '0.0000']
+cat 2: [0, 0, 0, 0] and ['0.0000', '0.0000', '0.0000', '0.0000']
+cat 3: [0, 0, 0, 0] and ['0.0000', '0.0000', '0.0000', '0.0000']
+[test epoch 1/120] | nw acc 0.39 | time 1 min 5 sec
+cat 0: [0, 201, 187, 149] and ['0.0000', '0.3743', '0.3482', '0.2775']
+cat 1: [0, 182, 32, 66] and ['0.0000', '0.6500', '0.1143', '0.2357']
+cat 2: [0, 0, 0, 0] and ['0.0000', '0.0000', '0.0000', '0.0000']
+cat 3: [0, 354, 152, 567] and ['0.0000', '0.3299', '0.1417', '0.5284']
