@@ -12,6 +12,7 @@ import argparse
 import numpy as np 
 import pandas as pd
 import time
+import datetime
 
 import torch
 from sklearn import metrics
@@ -27,17 +28,19 @@ def get_time():
 
 # =========================== PARAMETERS =========================== # 
 parser = argparse.ArgumentParser()
-parser.add_argument('--batch_size', type=int, default=32, help='input batch size')
+parser.add_argument('--batch_size', type=int, default=64, help='input batch size')
 parser.add_argument('--workers', type=int, help='number of data loading workers', default=1)
 parser.add_argument('--n_classes', type=int, help='number of classes', default=4)
-parser.add_argument('--n_epoch', type=int, default=120, help='number of epochs to train for')
+parser.add_argument('--n_epoch', type=int, default=200, help='number of epochs to train for')
 parser.add_argument('--st_epoch', type=int, default=0, help='if continuing training, epoch from which to continue')
-parser.add_argument('--model', type=str, default = None,  help='optional reload model path')
-parser.add_argument('--model_name', type=str, default = 'benchmark',  help='name of the model for log')
+parser.add_argument('--model', type=str, default=None,  help='optional reload model path')
+parser.add_argument('--model_name', type=str, default='benchmark',  help='name of the model for log')
+parser.add_argument('--criterion', type=str, default='cross_entropy',  help='name of the criterion to use')
+parser.add_argument('--optimizer', type=str, default='adam',  help='name of the optimizer to use')
+parser.add_argument('--lr', type=float, default=1e-3,  help='learning rate')
 parser.add_argument('--cuda', type=int, default=0, help='set to 1 to use cuda')
 opt = parser.parse_args()
 
-# ========================== CREATE DATASET ========================== #
 dataset_train = MaunaKea(train=True)
 loader_train = torch.utils.data.DataLoader(dataset_train, batch_size=opt.batch_size, shuffle=True, num_workers=opt.workers)
 
@@ -60,9 +63,17 @@ if opt.model is not None:
 if opt.cuda:
     network.cuda()
 
-lr = 0.001
-optimizer = torch.optim.Adam(network.parameters(), lr=lr)
-criterion = torch.nn.CrossEntropyLoss()
+if opt.optimizer == "adam":
+    optimizer = torch.optim.Adam(network.parameters(), lr=opt.lr)
+elif opt.optimizer == "sgd":
+    optimizer = torch.optim.SGD(network.parameters(), lr=opt.lr)
+else:
+    raise ValueError("Please choose between 'adam' and 'sgd' for the --optimizer")
+
+if opt.criterion == "cross_entropy":
+    criterion = torch.nn.CrossEntropyLoss()
+else:
+    raise ValueError("Please choose 'cross_entropy' for --criterion")
 
 # ====================== DEFINE STUFF FOR LOGS ====================== #
 log_path = os.path.join('log', 'cnn')
@@ -76,24 +87,26 @@ with open(log_file, 'a') as log:
 value_meter_train = AccuracyValueMeter(opt.n_classes)
 value_meter_test = AccuracyValueMeter(opt.n_classes)
 
-# Load or create csv file used to save logs
-if not os.path.exists("./log/logs_train.csv"):
-    df_logs_train = pd.DataFrame(columns=['model', 'epoch', 'n_epoch', 'date', 'loss', 'acc'
+log_train_file = "./log/cnn/logs_train_%s.csv" % opt.model_name
+log_test_file = "./log/cnn/logs_test_%s.csv" % opt.model_name
+
+if not os.path.exists(log_train_file): 
+    df_logs_train = pd.DataFrame(columns=['model', 'epoch', 'n_epoch', 'date', 'loss', 'acc', 'lr', 'optim', 'crit',
                                           'pred_0_0', 'pred_0_1', 'pred_0_2', 'pred_0_3',
                                           'pred_1_0', 'pred_1_1', 'pred_1_2', 'pred_1_3', 
                                           'pred_2_0', 'pred_2_1', 'pred_2_2', 'pred_2_3', 
                                           'pred_3_0', 'pred_3_1', 'pred_3_2', 'pred_3_3'])
 else:
-    df_logs_train = pd.read_csv("./log/logs_train.csv", header='infer')
+    df_logs_train = pd.read_csv(log_train_file,, header='infer')
 
-if not os.path.exists("./log/logs_test.csv"):
-    df_logs_test = pd.DataFrame(columns=['model', 'epoch', 'n_epoch', 'date', 'loss', 'acc',
+if not os.path.exists(log_test_file):
+    df_logs_test = pd.DataFrame(columns=['model', 'epoch', 'n_epoch', 'date', 'loss', 'acc', 'lr', 'optim', 'crit'
                                          'pred_0_0', 'pred_0_1', 'pred_0_2', 'pred_0_3',
                                          'pred_1_0', 'pred_1_1', 'pred_1_2', 'pred_1_3', 
                                          'pred_2_0', 'pred_2_1', 'pred_2_2', 'pred_2_3', 
                                          'pred_3_0', 'pred_3_1', 'pred_3_2', 'pred_3_3'])
 else:
-    df_logs_test = pd.read_csv("./log/logs_test.csv", header='infer')
+    df_logs_test = pd.read_csv(log_test_file, header='infer')
 
 # ====================== LEARNING LOOP ====================== #
 for epoch in range(opt.st_epoch, opt.n_epoch):
@@ -139,14 +152,17 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
                  'n_epoch': opt.n_epoch, 
                  'date': get_time(), 
                  'loss': loss_train, 
-                 'acc': value_meter_train.acc}
+                 'acc': value_meter_train.acc,
+                 'lr': opt.lr,
+                 'optim': opt.optimizer,
+                 'crit': opt.criterion}
 
     for i in range(opt.n_classes):
         for j in range(opt.n_classes):
             row_train["pred_%d_%d" % (i, j)] = value_meter_train_sum[i][j]
     
     df_logs_train = df_logs_train.append(row_train, ignore_index=True)
-    df_logs_train.to_csv("./log/logs_train.csv", header=True, index=False)
+    df_logs_train.to_csv(log_train_file, header=True, index=False)
 
     # TEST
     st_time = time.time()
@@ -186,14 +202,17 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
                 'n_epoch': opt.n_epoch, 
                 'date': get_time(), 
                 'loss': loss_test, 
-                'acc': value_meter_test.acc}
+                'acc': value_meter_test.acc
+                'lr': opt.lr,
+                'optim': opt.optimizer,
+                'crit': opt.criterion}
 
     for i in range(opt.n_classes):
         for j in range(opt.n_classes):
             row_test["pred_%d_%d" % (i, j)] = value_meter_tset_sum[i][j]
     
     df_logs_test = df_logs_test.append(row_test, ignore_index=True)
-    df_logs_test.to_csv("./log/logs_test.csv", header=True, index=False)
+    df_logs_test.to_csv(log_test_file, header=True, index=False)
     
     print("Saving net")
     torch.save(network.state_dict(), 'trained_models/cnn/%s.pth' % opt.model_name)
