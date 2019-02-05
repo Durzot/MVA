@@ -132,7 +132,8 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
         value_meter_train.update(pred, label, opt.batch_size)
     
         print('[train epoch %d/%d ; batch: %d/%d] train loss: %.3g' % (epoch+1, opt.n_epoch, batch+1, n_batch, loss.item()))
-        
+
+    loss_train /= n_batch
     dt = time.time()-st_time
     s_time = "%d min %d sec" % (dt//60, dt%60)
     
@@ -143,7 +144,7 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
     print('='*40)
     
     with open(log_file, 'a') as log:
-        log.write('[train epoch %d/%d] | loss %.3g | nw acc %.3g | time %s' % (epoch+1, opt.n_epoch, loss_train, value_meter_train.acc, s_time) +  '\n')
+        log.write('[train epoch %d/%d] | loss %.5g | nw acc %.3g | time %s' % (epoch+1, opt.n_epoch, loss_train, value_meter_train.acc, s_time) +  '\n')
         for i in range(opt.n_classes):
             log.write('cat %d: %s and %s' % (i, value_meter_train.sum[i], [float("{0:0.4f}".format(f)) for f in value_meter_train.avg[i]]) + '\n')
 
@@ -159,7 +160,7 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
 
     for i in range(opt.n_classes):
         for j in range(opt.n_classes):
-            row_train["pred_%d_%d" % (i, j)] = value_meter_train_sum[i][j]
+            row_train["pred_%d_%d" % (i, j)] = value_meter_train.sum[i][j]
     
     df_logs_train = df_logs_train.append(row_train, ignore_index=True)
     df_logs_train.to_csv(log_train_file, header=True, index=False)
@@ -183,6 +184,7 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
             label = label.cpu().data.numpy()
             value_meter_test.update(pred, label, opt.batch_size)
     
+    loss_test /= n_batch
     dt = time.time()-st_time
     s_time = "%d min %d sec" % (dt//60, dt%60)
 
@@ -209,7 +211,7 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
 
     for i in range(opt.n_classes):
         for j in range(opt.n_classes):
-            row_test["pred_%d_%d" % (i, j)] = value_meter_tset_sum[i][j]
+            row_test["pred_%d_%d" % (i, j)] = value_meter_test.sum[i][j]
     
     df_logs_test = df_logs_test.append(row_test, ignore_index=True)
     df_logs_test.to_csv(log_test_file, header=True, index=False)
