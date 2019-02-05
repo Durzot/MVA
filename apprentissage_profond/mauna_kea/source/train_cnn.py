@@ -202,7 +202,7 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
                 'n_epoch': opt.n_epoch, 
                 'date': get_time(), 
                 'loss': loss_test, 
-                'acc': value_meter_test.acc
+                'acc': value_meter_test.acc,
                 'lr': opt.lr,
                 'optim': opt.optimizer,
                 'crit': opt.criterion}
