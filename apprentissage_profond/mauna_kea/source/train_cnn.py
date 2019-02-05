@@ -24,7 +24,7 @@ from models import *
 from utils import *
 
 def get_time():
-    return dt.datetime.now().strftime("%Y-%m-%d %H:%M") 
+    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M") 
 
 # =========================== PARAMETERS =========================== # 
 parser = argparse.ArgumentParser()
