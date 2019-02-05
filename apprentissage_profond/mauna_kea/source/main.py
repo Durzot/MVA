@@ -20,7 +20,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets
-from torch.autograd import Variable
+from torch.autograd import Variable\
 
 from sklearn import metrics
 from tqdm import tqdm
@@ -35,7 +35,7 @@ import matplotlib
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 
-img = Image.open("data/TrainingSetImagesDir/im_0_0.png")
+img = Image.open("data/TrainingSetImagesDir/im_0_0.png").convert("L")
 img = np.array(img).astype("float32")/255
 
 fig, ax = plt.subplots(nrows=1,ncols=1)
@@ -149,7 +149,7 @@ def train(model, train_loader, batch_size, epoch, row_results, optimizer, criter
     pred = np.where(probas > threshold, 1, 0)
     precision, recall, f1_score, support = metrics.precision_recall_fscore_support(y_true=target, y_pred=pred)
 
-    print('\nTrain Epoch: {} \tLoss: {:.3f}, precision: {:.3f}%, recall: {:.3f}%, f1_score: {:.3f}, support: {}/{} \
+    print('\nTrain Epoch: {} \tLoss: {:.3f}, precision: {:.3f}%, recall: {:.3f}%, f1_s core: {:.3f}, support: {}/{} \
           support_pred {}/{}\n'.format(loss_train, precision[1], recall[1], f1_score[1], support[1], len(target),
                                        sum(pred), len(target)))
         

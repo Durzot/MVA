@@ -10,6 +10,7 @@ import os
 import sys
 import argparse
 import numpy as np 
+import pandas as pd
 import time
 
 import torch
@@ -20,6 +21,9 @@ sys.path.append("./source")
 from dataset import *
 from models import *
 from utils import *
+
+def get_time():
+    return dt.datetime.now().strftime("%Y-%m-%d %H:%M") 
 
 # =========================== PARAMETERS =========================== # 
 parser = argparse.ArgumentParser()
@@ -72,6 +76,25 @@ with open(log_file, 'a') as log:
 value_meter_train = AccuracyValueMeter(opt.n_classes)
 value_meter_test = AccuracyValueMeter(opt.n_classes)
 
+# Load or create csv file used to save logs
+if not os.path.exists("./log/logs_train.csv"):
+    df_logs_train = pd.DataFrame(columns=['model', 'epoch', 'n_epoch', 'date', 'loss', 'acc'
+                                          'pred_0_0', 'pred_0_1', 'pred_0_2', 'pred_0_3',
+                                          'pred_1_0', 'pred_1_1', 'pred_1_2', 'pred_1_3', 
+                                          'pred_2_0', 'pred_2_1', 'pred_2_2', 'pred_2_3', 
+                                          'pred_3_0', 'pred_3_1', 'pred_3_2', 'pred_3_3'])
+else:
+    df_logs_train = pd.read_csv("./log/logs_train.csv", header='infer')
+
+if not os.path.exists("./log/logs_test.csv"):
+    df_logs_test = pd.DataFrame(columns=['model', 'epoch', 'n_epoch', 'date', 'loss', 'acc',
+                                         'pred_0_0', 'pred_0_1', 'pred_0_2', 'pred_0_3',
+                                         'pred_1_0', 'pred_1_1', 'pred_1_2', 'pred_1_3', 
+                                         'pred_2_0', 'pred_2_1', 'pred_2_2', 'pred_2_3', 
+                                         'pred_3_0', 'pred_3_1', 'pred_3_2', 'pred_3_3'])
+else:
+    df_logs_test = pd.read_csv("./log/logs_test.csv", header='infer')
+
 # ====================== LEARNING LOOP ====================== #
 for epoch in range(opt.st_epoch, opt.n_epoch):
     # TRAINING
@@ -110,7 +133,21 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
         log.write('[train epoch %d/%d] | loss %.3g | nw acc %.3g | time %s' % (epoch+1, opt.n_epoch, loss_train, value_meter_train.acc, s_time) +  '\n')
         for i in range(opt.n_classes):
             log.write('cat %d: %s and %s' % (i, value_meter_train.sum[i], [float("{0:0.4f}".format(f)) for f in value_meter_train.avg[i]]) + '\n')
+
+    row_train = {'model': opt.model_name, 
+                 'epoch': epoch+1, 
+                 'n_epoch': opt.n_epoch, 
+                 'date': get_time(), 
+                 'loss': loss_train, 
+                 'acc': value_meter_train.acc}
+
+    for i in range(opt.n_classes):
+        for j in range(opt.n_classes):
+            row_train["pred_%d_%d" % (i, j)] = value_meter_train_sum[i][j]
     
+    df_logs_train = df_logs_train.append(row_train, ignore_index=True)
+    df_logs_train.to_csv("./log/logs_train.csv", header=True, index=False)
+
     # TEST
     st_time = time.time()
     network.eval()
@@ -143,6 +180,20 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
         log.write('[test epoch %d/%d] | loss %.3g | nw acc %.3g | time %s' % (epoch+1, opt.n_epoch, loss_test, value_meter_test.acc, s_time) + '\n')
         for i in range(opt.n_classes):
             log.write('cat %d: %s and %s' % (i, value_meter_test.sum[i], [float("{0:0.4f}".format(f)) for f in value_meter_test.avg[i]]) + '\n')
+
+    row_test = {'model': opt.model_name, 
+                'epoch': epoch+1, 
+                'n_epoch': opt.n_epoch, 
+                'date': get_time(), 
+                'loss': loss_test, 
+                'acc': value_meter_test.acc}
+
+    for i in range(opt.n_classes):
+        for j in range(opt.n_classes):
+            row_test["pred_%d_%d" % (i, j)] = value_meter_tset_sum[i][j]
+    
+    df_logs_test = df_logs_test.append(row_test, ignore_index=True)
+    df_logs_test.to_csv("./log/logs_test.csv", header=True, index=False)
     
     print("Saving net")
     torch.save(network.state_dict(), 'trained_models/cnn/%s.pth' % opt.model_name)
