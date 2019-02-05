@@ -133,7 +133,7 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
     
         print('[train epoch %d/%d ; batch: %d/%d] train loss: %.3g' % (epoch+1, opt.n_epoch, batch+1, n_batch, loss.item()))
 
-    loss_train /= n_batch
+    loss_train = loss_train.cpu().item()/n_batch
     dt = time.time()-st_time
     s_time = "%d min %d sec" % (dt//60, dt%60)
     
@@ -184,7 +184,7 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
             label = label.cpu().data.numpy()
             value_meter_test.update(pred, label, opt.batch_size)
     
-    loss_test /= n_batch
+    loss_test = loss_test.cpu().item()/n_batch
     dt = time.time()-st_time
     s_time = "%d min %d sec" % (dt//60, dt%60)
 
