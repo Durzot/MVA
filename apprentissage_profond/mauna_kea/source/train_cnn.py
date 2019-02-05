@@ -97,7 +97,7 @@ if not os.path.exists(log_train_file):
                                           'pred_2_0', 'pred_2_1', 'pred_2_2', 'pred_2_3', 
                                           'pred_3_0', 'pred_3_1', 'pred_3_2', 'pred_3_3'])
 else:
-    df_logs_train = pd.read_csv(log_train_file,, header='infer')
+    df_logs_train = pd.read_csv(log_train_file, header='infer')
 
 if not os.path.exists(log_test_file):
     df_logs_test = pd.DataFrame(columns=['model', 'epoch', 'n_epoch', 'date', 'loss', 'acc', 'lr', 'optim', 'crit'
