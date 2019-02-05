@@ -100,7 +100,7 @@ else:
     df_logs_train = pd.read_csv(log_train_file, header='infer')
 
 if not os.path.exists(log_test_file):
-    df_logs_test = pd.DataFrame(columns=['model', 'epoch', 'n_epoch', 'date', 'loss', 'acc', 'lr', 'optim', 'crit'
+    df_logs_test = pd.DataFrame(columns=['model', 'epoch', 'n_epoch', 'date', 'loss', 'acc', 'lr', 'optim', 'crit',
                                          'pred_0_0', 'pred_0_1', 'pred_0_2', 'pred_0_3',
                                          'pred_1_0', 'pred_1_1', 'pred_1_2', 'pred_1_3', 
                                          'pred_2_0', 'pred_2_1', 'pred_2_2', 'pred_2_3', 
@@ -133,7 +133,7 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
     
         print('[train epoch %d/%d ; batch: %d/%d] train loss: %.3g' % (epoch+1, opt.n_epoch, batch+1, n_batch, loss.item()))
 
-    loss_train = loss_train.cpu().item()/n_batch
+    loss_train = float(loss_train.cpu())/n_batch
     dt = time.time()-st_time
     s_time = "%d min %d sec" % (dt//60, dt%60)
     
@@ -184,7 +184,7 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
             label = label.cpu().data.numpy()
             value_meter_test.update(pred, label, opt.batch_size)
     
-    loss_test = loss_test.cpu().item()/n_batch
+    loss_test = float(loss_test.cpu())/n_batch
     dt = time.time()-st_time
     s_time = "%d min %d sec" % (dt//60, dt%60)
 
