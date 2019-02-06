@@ -19,45 +19,19 @@ class BenchMark(nn.Module):
         self.pool1 = nn.MaxPool2d(kernel_size=2)                                                       # (3, 114, 114)
         self.drop1 = nn.Dropout2d(p=0.5)
         self.conv2 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, stride=2, padding=1)     # (16, 57, 57)
-        self.pool2 = nn.MaxPool2d(kernel_size=2)                                                       # (16, 29, 29)
+        self.pool2 = nn.MaxPool2d(kernel_size=2)                                                       # (16, 28, 28)
         self.drop2 = nn.Dropout2d(p=0.5)
-        self.conv3 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=2, padding=1)    # (32, 15, 15)
-        self.pool3 = nn.MaxPool2d(kernel_size=2)                                                       # (32, 8, 8)
+        self.conv3 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=2, padding=1)    # (32, 14, 14)
+        self.pool3 = nn.MaxPool2d(kernel_size=2)                                                       # (32, 7, 7)
         self.drop3 = nn.Dropout2d(p=0.25)
         
-        self.fc1 = nn.Linear(2048, n_classes)
+        self.fc1 = nn.Linear(1568, n_classes)
 
     def forward(self, x):
         # input is (bs, 1, 456, 456)
         x = self.drop1(self.pool1(F.relu(self.conv1(x))))
         x = self.drop2(self.pool2(F.relu(self.conv2(x))))
         x = self.drop3(self.pool3(F.relu(self.conv3(x))))
-    
-        x = x.view(x.size(0), -1)
-        x = F.tanh(self.fc1(x))
-        return x
-
-class BenchMarkAug(nn.Module):
-    def __init__(self, n_classes):
-        super(BenchMark, self).__init__()
-        self.n_classes = n_classes
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=3, kernel_size=3, stride=2, padding=1)      # (3, 228, 228)
-        self.pool1 = nn.MaxPool2d(kernel_size=2)                                                       # (3, 114, 114)
-        self.drop1 = nn.Dropout2d(p=0.5)
-        self.conv2 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, stride=2, padding=1)     # (16, 57, 57)
-        self.pool2 = nn.MaxPool2d(kernel_size=2)                                                       # (16, 29, 29)
-        self.drop2 = nn.Dropout2d(p=0.5)
-        self.conv3 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=2, padding=1)    # (32, 15, 15)
-        self.pool3 = nn.MaxPool2d(kernel_size=2)                                                       # (32, 8, 8)
-        self.drop3 = nn.Dropout2d(p=0.25)
-        
-        self.fc1 = nn.Linear(2048, n_classes)
-
-    def forward(self, x):
-        # input is (bs, 1, 456, 456)
-        x = self.drop1(self.pool1(F.relu(self.conv1(x))))
-        x = self.drop2(self.pool1(F.relu(self.conv1(x))))
-        x = self.drop3(self.pool1(F.relu(self.conv1(x))))
     
         x = x.view(x.size(0), -1)
         x = F.tanh(self.fc1(x))
