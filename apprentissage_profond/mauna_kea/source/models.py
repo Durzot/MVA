@@ -30,8 +30,8 @@ class BenchMark(nn.Module):
     def forward(self, x):
         # input is (bs, 1, 456, 456)
         x = self.drop1(self.pool1(F.relu(self.conv1(x))))
-        x = self.drop2(self.pool1(F.relu(self.conv1(x))))
-        x = self.drop3(self.pool1(F.relu(self.conv1(x))))
+        x = self.drop2(self.pool2(F.relu(self.conv2(x))))
+        x = self.drop3(self.pool3(F.relu(self.conv3(x))))
     
         x = x.view(x.size(0), -1)
         x = F.tanh(self.fc1(x))
