@@ -35,7 +35,7 @@ parser.add_argument('--n_classes', type=int, default=4, help='number of classes'
 parser.add_argument('--n_epoch', type=int, default=100, help='number of epochs to train for')
 parser.add_argument('--st_epoch', type=int, default=0, help='if continuing training, epoch from which to continue')
 parser.add_argument('--model', type=str, default=None,  help='optional reload model path')
-parser.add_argument('--model_name', type=str, default='benchmark',  help='name of the model for log')
+parser.add_argument('--model_name', type=str, default='BenchMark',  help='name of the model for log')
 parser.add_argument('--criterion', type=str, default='cross_entropy',  help='name of the criterion to use')
 parser.add_argument('--optimizer', type=str, default='adam',  help='name of the optimizer to use')
 parser.add_argument('--lr', type=float, default=1e-3,  help='learning rate')
@@ -55,7 +55,7 @@ print('test set size %d' % len(dataset_test))
 n_batch = len(dataset_train)//opt.batch_size
 
 # ========================== NETWORK AND OPTIMIZER ========================== #
-network = MaunaNet4(n_classes=opt.n_classes)
+network = eval("%s(n_classes=opt.n_classes)" % model_name))
 network.apply(init_weight)
 
 if opt.model is not None:
