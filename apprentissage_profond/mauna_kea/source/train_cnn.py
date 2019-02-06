@@ -55,7 +55,7 @@ print('test set size %d' % len(dataset_test))
 n_batch = len(dataset_train)//opt.batch_size
 
 # ========================== NETWORK AND OPTIMIZER ========================== #
-network = eval("%s(n_classes=opt.n_classes)" % model_name)
+network = eval("%s(n_classes=opt.n_classes)" % opt.model_name)
 network.apply(init_weight)
 
 if opt.model is not None:
@@ -86,9 +86,6 @@ log_file = os.path.join(log_path, 'cnn_%s.txt' % opt.model_name)
 with open(log_file, 'a') as log:
     log.write(str(network) + '\n')
 
-value_meter_train = AccuracyValueMeter(opt.n_classes)
-value_meter_test = AccuracyValueMeter(opt.n_classes)
-
 log_train_file = "./log/cnn/logs_train_%s.csv" % opt.model_name
 log_test_file = "./log/cnn/logs_test_%s.csv" % opt.model_name
 
@@ -109,6 +106,9 @@ if not os.path.exists(log_test_file):
                                          'pred_3_0', 'pred_3_1', 'pred_3_2', 'pred_3_3'])
 else:
     df_logs_test = pd.read_csv(log_test_file, header='infer')
+
+value_meter_train = AccuracyValueMeter(opt.n_classes)
+value_meter_test = AccuracyValueMeter(opt.n_classes)
 
 # ====================== LEARNING LOOP ====================== #
 for epoch in range(opt.st_epoch, opt.n_epoch):
