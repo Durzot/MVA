@@ -14,17 +14,24 @@ from PIL import Image
 
 class MaunaKea(data.Dataset):
     def __init__(self, root_img="./data/TrainingSetImagesDir", label_file="./data/TrainingSet_20aimVO.csv", 
-                 split=0.8, train=True):
+                 split=0.8, train=True, data_aug=0):
         self.root_img = root_img
         self.label_img = pd.read_csv(label_file)
         self.split = split
         self.train = train
+        self.data_aug = data_aug
         self._data = []
 
-        self.transforms = transforms.Compose(
-            [transforms.CenterCrop(456),
-             transforms.ToTensor()]
-        )
+        if self.data_aug:
+            self.transforms = transforms.Compose(
+                [transforms.CenterCrop(456),
+                 transforms.RandomCrop(127),
+                 transforms.RandomHorizontalFlip(),
+                 transforms.ToTensor()])
+        else:
+            self.transforms = transforms.Compose(
+                [transforms.CenterCrop(456),
+                 transforms.ToTensor()])
         
         for _, row in self.label_img.iterrows():
             path = os.path.join(root_img, row['image_filename'])
@@ -46,14 +53,21 @@ class MaunaKea(data.Dataset):
         return len(self._data)
 
 class MaunaKeaTest(data.Dataset):
-    def __init__(self, root_img="./data/TestSetImagesDir/part1"):
+    def __init__(self, root_img="./data/TestSetImagesDir/part1", data_aug=0):
         self.root_img = root_img
+        self.data_aug = data_aug
         self._data = []
 
-        self.transforms = transforms.Compose(
-            [transforms.CenterCrop(456),
-             transforms.ToTensor()]
-        )
+        if self.data_aug:
+            self.transforms = transforms.Compose(
+                [transforms.CenterCrop(456),
+                 transforms.RandomCrop(127),
+                 transforms.RandomHorizontalFlip(),
+                 transforms.ToTensor()])
+        else:
+            self.transforms = transforms.Compose(
+                [transforms.CenterCrop(456),
+                 transforms.ToTensor()])
         
         self._fn_img = os.listdir(self.root_img)
         self._fn_img = [fn for fn in self.fn_img if '.png' in fn]

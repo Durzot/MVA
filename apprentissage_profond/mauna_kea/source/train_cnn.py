@@ -29,9 +29,10 @@ def get_time():
 # =========================== PARAMETERS =========================== # 
 parser = argparse.ArgumentParser()
 parser.add_argument('--batch_size', type=int, default=64, help='input batch size')
-parser.add_argument('--workers', type=int, help='number of data loading workers', default=1)
-parser.add_argument('--n_classes', type=int, help='number of classes', default=4)
-parser.add_argument('--n_epoch', type=int, default=200, help='number of epochs to train for')
+parser.add_argument('--workers', type=int, default=1, help='number of data loading workers')
+parser.add_argument('--data_aug', type=int, default=0 , help='1 for data augmentation')
+parser.add_argument('--n_classes', type=int, default=4, help='number of classes')
+parser.add_argument('--n_epoch', type=int, default=100, help='number of epochs to train for')
 parser.add_argument('--st_epoch', type=int, default=0, help='if continuing training, epoch from which to continue')
 parser.add_argument('--model', type=str, default=None,  help='optional reload model path')
 parser.add_argument('--model_name', type=str, default='benchmark',  help='name of the model for log')
@@ -41,10 +42,11 @@ parser.add_argument('--lr', type=float, default=1e-3,  help='learning rate')
 parser.add_argument('--cuda', type=int, default=0, help='set to 1 to use cuda')
 opt = parser.parse_args()
 
-dataset_train = MaunaKea(train=True)
+# ========================== TRAINING AND TEST DATA ========================== #
+dataset_train = MaunaKea(train=True, data_aug=opt.data_aug)
 loader_train = torch.utils.data.DataLoader(dataset_train, batch_size=opt.batch_size, shuffle=True, num_workers=opt.workers)
 
-dataset_test = MaunaKea(train=False)
+dataset_test = MaunaKea(train=False, data_aug=opt.data_aug)
 loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=opt.batch_size, shuffle=False, num_workers=opt.workers)
 
 print('training set size %d' % len(dataset_train))
