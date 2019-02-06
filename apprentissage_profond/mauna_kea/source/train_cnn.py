@@ -55,7 +55,7 @@ print('test set size %d' % len(dataset_test))
 n_batch = len(dataset_train)//opt.batch_size
 
 # ========================== NETWORK AND OPTIMIZER ========================== #
-network = eval("%s(n_classes=opt.n_classes)" % model_name))
+network = eval("%s(n_classes=opt.n_classes)" % model_name)
 network.apply(init_weight)
 
 if opt.model is not None:
