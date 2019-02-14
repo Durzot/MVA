@@ -29,6 +29,62 @@ import gc; gc.enable()
 print(sys.version)
 print(os.getcwd())
 
+import numbers
+import random
+class RandomCropCircle(object):
+    """Crop the given PIL.Image at a random location.
+
+    Args:
+        size (sequence or int): Desired output size of the crop. If size is an
+            int instead of sequence like (h, w), a square crop (size, size) is
+            made.
+        radius (int): Radius of the circular image from which to extract a 
+            rectangular crop.   
+    """
+
+    def __init__(self, size, radius):
+        if isinstance(size, numbers.Number):
+            self.size = (int(size), int(size))
+        else:
+            self.size = size
+        self.radius = radius
+
+    def __call__(self, img):
+        """
+        Args:
+            img (PIL.Image): Image to be cropped.
+
+        Returns:
+            PIL.Image: Cropped image.
+        """
+        h, w = img.size
+        th, tw = self.size
+        if w == tw and h == th:
+            return img
+
+        # Some images have black bands on the top and the bottom
+        # We quantify the height of that band in a margin from which we won't sample
+        pixels = np.array(img).astype("float32")
+        margin = next((i for i,pixel in enumerate(pixels[:, 260]) if pixel !=0), None)  
+            
+        # Artificially increase height of the desired crop to make sure we don't 
+        # include chunks of black band in the images
+        th += margin
+    
+        xmin = max(int(w/2-np.sqrt(self.radius**2 - th**2/4.)+1), 0)
+        xmax = int(w/2+np.sqrt(self.radius**2 - th**2/4.)+1) - tw
+        x = random.randint(xmin, xmax)
+        
+        ymax = int(h/2 - th + min(np.sqrt(self.radius**2 - (x-w/2)**2), np.sqrt(self.radius**2 - (x+tw-w/2)**2)))
+        ymin = int(h/2 - min(np.sqrt(self.radius**2 - (x-w/2)**2), np.sqrt(self.radius**2 - (x+tw-w/2)**2)))
+        y = random.randint(max(margin, ymin), ymax)
+
+        self.x = x
+        self.y = y
+
+        return img.crop((x, y, x + tw, y + th))
+
+
 # ============================== VIZUALIZE IMAGES ============================== #
 
 import matplotlib
@@ -36,10 +92,44 @@ matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 
 img = Image.open("data/TrainingSetImagesDir/im_0_0.png").convert("L")
-img = np.array(img).astype("float32")/255
+cropper = RandomCropCircle(size=(224, 224), radius=278)
+for i in range(15):
+    crop = np.array(cropper(img)).astype("float32")/255
+    fig, ax = plt.subplots(nrows=1,ncols=1)
+    ax.imshow(crop, cmap="gray")
+    fig.savefig("graphs/crop_0_0_%d.png" % i, format="png")
+    plt.close("all")
 
 fig, ax = plt.subplots(nrows=1,ncols=1)
 ax.imshow(img, cmap="gray")
+for i in range(1000):
+    cropper(img)
+    ax.scatter(cropper.x, cropper.y, color="red", marker="+")
+    ax.scatter(cropper.x+224, cropper.y+224, color="blue", marker="+")
+fig.savefig("graphs/crop_0_0_sample.png", format="png")
+
+fig, ax = plt.subplots(nrows=1,ncols=1)
+img = Image.open("data/TrainingSetImagesDir/im_0_0.png").convert("L")
+ax.imshow(img, cmap="gray")
+ax.scatter(224, 12, color="red", marker="+")
+fig.savefig("graphs/height.png", format="png")
+
+
+
+img = np.array(img).astype("float32")/255
+
+R = 278
+def get_y_neg(x):
+    return np.sqrt(R**2 - (x-521//2)**2) + 519//2
+def get_y_pos(x):
+    return -np.sqrt(R**2 - (x-521//2)**2) + 519//2
+
+
+fig, ax = plt.subplots(nrows=1,ncols=1)
+ax.imshow(img, cmap="gray")
+xord = np.linspace(0, 521, 100)
+ax.scatter(xord, get_y_pos(xord), color="red", marker='+')
+ax.scatter(xord, get_y_neg(xord), color="red", marker='+')
 fig.savefig("graphs/im_0_0.png", format="png")
 plt.close("all")
 
