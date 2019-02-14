@@ -109,7 +109,7 @@ class MaunaKea(data.Dataset):
         return len(self._data)
 
 class MaunaKeaTest(data.Dataset):
-    def __init__(self, root_img="./data/TestSetImagesDir/part1", data_aug=0):
+    def __init__(self, root_img="./data/TestSetImagesDir/part_1", data_aug=0):
         self.root_img = root_img
         self.data_aug = data_aug
         self._data = []
@@ -125,15 +125,15 @@ class MaunaKeaTest(data.Dataset):
                  transforms.ToTensor()])
         
         self._fn_img = os.listdir(self.root_img)
-        self._fn_img = [fn for fn in self.fn_img if '.png' in fn]
+        self._fn_img = [fn for fn in self._fn_img if '.png' in fn]
         for fn in self._fn_img:
-            path = os.path.join(root_img, fn_img)
-            self._data.append(path)
+            path = os.path.join(root_img, fn)
+            self._data.append((fn, path))
         
     def __getitem__(self, index):
-        path = self._data[index]
+        fn, path = self._data[index]
         img = self.transforms(Image.open(path).convert('L'))
-        return img
+        return fn, img
 
     def __len__(self):
         return len(self._data)

@@ -15,9 +15,6 @@ import time
 import datetime
 
 import torch
-from sklearn import metrics
-import json
-
 sys.path.append("./source")
 from dataset import *
 from models import *
