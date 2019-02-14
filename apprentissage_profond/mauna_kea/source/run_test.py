@@ -63,17 +63,19 @@ network.eval()
 
 for loader_test in [loader_test_1, loader_test_2]:
     with torch.no_grad():
-        for batch, (fn, data) in enumerate(loader_test):
+        for fn, data in loader_test:
             if opt.cuda:
                 data = data.cuda()
             
             output = network(data)
             pred = output.cpu().data.numpy().argmax(axis=1)
-            fn = fn.cpu().data.numpy()
-
+            
             for f, pr in zip(fn, pred):
                 row_test = {'image_filename': f, 'class_number': pr}
                 df_test = df_test.append(row_test, ignore_index=True)
+
+dt = time.time()-st_time
+print("%d min %d sec" % (dt//60, dt%60))
     
 df_test.to_csv(test_file, header=True, index=False)
 
