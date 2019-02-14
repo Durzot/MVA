@@ -50,7 +50,7 @@ if opt.cuda:
     network.load_state_dict(torch.load(opt.model_path))
     network.cuda()
 else:
-    network.load_state_dict(torch.load(opt.model_path), map_location=lambda storage, loc: storage)
+    network.load_state_dict(torch.load(opt.model_path), map_location='cpu')
 
 print("Weights from %s loaded" % opt.model_name)
 
@@ -65,7 +65,7 @@ for loader_test in [loader_test_1, loader_test_2]:
     with torch.no_grad():
         for batch, (fn, data) in enumerate(loader_test):
             if opt.cuda:
-                data, label = data.cuda(), label.cuda()
+                data = data.cuda()
             
             output = network(data)
             pred = output.cpu().data.numpy().argmax(axis=1)
