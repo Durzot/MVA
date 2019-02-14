@@ -52,7 +52,7 @@ if opt.cuda:
 else:
     network.load_state_dict(torch.load(opt.model_path), map_location='cpu')
 
-print("Weights from %s loaded" % opt.model_name)
+print("Weights from %s loaded" % opt.model_path)
 
 df_test = pd.DataFrame(columns=['image_filename', 'class_number'])
 test_file = "./submissions/sub_%s.csv" % opt.model_name
