@@ -34,12 +34,12 @@ class BenchMark(nn.Module):
         x = self.pool3(self.drop3(F.relu(self.conv3(x))))
     
         x = x.view(x.size(0), -1)
-        x = F.tanh(self.fc1(x))
+        x = torch.tanh(self.fc1(x))
         return x
 
 class BenchMarkAug(nn.Module):
     def __init__(self, n_classes):
-        super(BenchMark, self).__init__()
+        super(BenchMarkAug, self).__init__()
         self.n_classes = n_classes
         self.conv1 = nn.Conv2d(in_channels=1, out_channels=3, kernel_size=3, stride=2, padding=1)      # (3, 112, 112)
         self.pool1 = nn.MaxPool2d(kernel_size=2)                                                       # (3, 56, 56)
@@ -51,7 +51,7 @@ class BenchMarkAug(nn.Module):
         self.pool3 = nn.MaxPool2d(kernel_size=2)                                                       # (64, 3, 3)
         self.drop3 = nn.Dropout2d(p=0.2)
         
-        self.fc1 = nn.Linear(384, n_classes)
+        self.fc1 = nn.Linear(576, n_classes)
 
     def forward(self, x):
         # input is (bs, 1, 224, 224)
@@ -60,12 +60,12 @@ class BenchMarkAug(nn.Module):
         x = self.pool3(self.drop3(F.relu(self.conv3(x))))
     
         x = x.view(x.size(0), -1)
-        x = F.tanh(self.fc1(x))
+        x = torch.tanh(self.fc1(x))
         return x
 
-class BenchMarkBnAug(nn.Module):
+class BenchMarkAugBn(nn.Module):
     def __init__(self, n_classes):
-        super(BenchMark, self).__init__()
+        super(BenchMarkAugBn, self).__init__()
         self.n_classes = n_classes
         self.conv1 = nn.Conv2d(in_channels=1, out_channels=3, kernel_size=3, stride=2, padding=1)      # (3, 112, 112)
         self.bn1 = nn.BatchNorm2d(3)
@@ -80,7 +80,7 @@ class BenchMarkBnAug(nn.Module):
         self.pool3 = nn.MaxPool2d(kernel_size=2)                                                       # (64, 3, 3)
         self.drop3 = nn.Dropout2d(p=0.2)
         
-        self.fc1 = nn.Linear(384, n_classes)
+        self.fc1 = nn.Linear(576, n_classes)
 
     def forward(self, x):
         # input is (bs, 1, 224, 224)
@@ -89,7 +89,7 @@ class BenchMarkBnAug(nn.Module):
         x = self.pool3(self.drop3(F.relu(self.bn3(self.conv3(x)))))
     
         x = x.view(x.size(0), -1)
-        x = F.tanh(self.fc1(x))
+        x = torch.tanh(self.fc1(x))
         return x
 
 class MaunaNet4(nn.Module):
@@ -121,12 +121,12 @@ class MaunaNet4(nn.Module):
     
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
-        x = F.tanh(self.fc1(x))
+        x = torch.tanh(self.fc1(x))
         return x
 
 class MaunaNet4Drop(nn.Module):
     def __init__(self, n_classes):
-        super(MaunaNet4, self).__init__()
+        super(MaunaNet4Drop, self).__init__()
         self.n_classes = n_classes
         self.conv1 = nn.Conv2d(in_channels=1, out_channels=3, kernel_size=3, stride=2, padding=1)      # (3, 228, 228)
         self.bn1 = nn.BatchNorm2d(3)
@@ -145,7 +145,7 @@ class MaunaNet4Drop(nn.Module):
         self.drop4 = nn.Dropout2d(p=0.2)
         self.pool4 = nn.MaxPool2d(kernel_size=2)                                                       # (256, 2, 2)
         
-        self.avgpool = nn.AvgPool2d(2)                                                                 # (256, 2, 2)
+        self.avgpool = nn.AvgPool2d(2)                                                                 # (256, 1, 1)
         self.fc1 = nn.Linear(256, n_classes)
 
     def forward(self, x):
@@ -157,7 +157,7 @@ class MaunaNet4Drop(nn.Module):
     
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
-        x = F.tanh(self.fc1(x))
+        x = torch.tanh(self.fc1(x))
         return x
 
 class MaunaNet4Aug(nn.Module):
@@ -189,12 +189,12 @@ class MaunaNet4Aug(nn.Module):
     
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
-        x = F.tanh(self.fc1(x))
+        x = torch.tanh(self.fc1(x))
         return x
 
 class MaunaNet4AugDrop(nn.Module):
     def __init__(self, n_classes):
-        super(MaunaNet4Aug, self).__init__()
+        super(MaunaNet4AugDrop, self).__init__()
         self.n_classes = n_classes
         self.conv1 = nn.Conv2d(in_channels=1, out_channels=3, kernel_size=3, stride=2, padding=1)      # (3, 112, 112)
         self.bn1 = nn.BatchNorm2d(3)
@@ -225,5 +225,5 @@ class MaunaNet4AugDrop(nn.Module):
     
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
-        x = F.tanh(self.fc1(x))
+        x = torch.tanh(self.fc1(x))
         return x

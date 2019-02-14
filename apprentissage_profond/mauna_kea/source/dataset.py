@@ -66,10 +66,10 @@ class RandomCropCircle(object):
 
 class MaunaKea(data.Dataset):
     def __init__(self, root_img="./data/TrainingSetImagesDir", label_file="./data/TrainingSet_20aimVO.csv", 
-                 train_size=0.8, train=True, data_aug=0, random_state=0):
+                 test_size=0.2, train=True, data_aug=0, random_state=0):
         self.root_img = root_img
         self.label_img = pd.read_csv(label_file)
-        self.train_size = train_size
+        self.test_size = test_size
         self.train = train
         self.data_aug = data_aug
         self.random_state = random_state
@@ -86,7 +86,7 @@ class MaunaKea(data.Dataset):
                  transforms.ToTensor()])
        
         train_idx, test_idx = train_test_split(self.label_img.index, 
-                                               train_size=self.train_size,
+                                               test_size=self.test_size,
                                                stratify=self.label_img.class_number,
                                                random_state=self.random_state)
 

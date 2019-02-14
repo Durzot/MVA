@@ -78,7 +78,7 @@ else:
     raise ValueError("Please choose 'cross_entropy' for --criterion")
 
 # ====================== DEFINE STUFF FOR LOGS ====================== #
-log_path = os.path.join('log', 'cnn')
+log_path = os.path.join('log', 'cnn_2')
 if not os.path.exists(log_path):
     os.mkdir(log_path)
 
@@ -86,8 +86,8 @@ log_file = os.path.join(log_path, 'cnn_%s.txt' % opt.model_name)
 with open(log_file, 'a') as log:
     log.write(str(network) + '\n')
 
-log_train_file = "./log/cnn/logs_train_%s.csv" % opt.model_name
-log_test_file = "./log/cnn/logs_test_%s.csv" % opt.model_name
+log_train_file = "./log/cnn_2/logs_train_%s.csv" % opt.model_name
+log_test_file = "./log/cnn_2/logs_test_%s.csv" % opt.model_name
 
 if not os.path.exists(log_train_file): 
     df_logs_train = pd.DataFrame(columns=['model', 'epoch', 'n_epoch', 'date', 'loss', 'acc', 'lr', 'optim', 'crit',
@@ -219,5 +219,5 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
     df_logs_test.to_csv(log_test_file, header=True, index=False)
     
     print("Saving net")
-    torch.save(network.state_dict(), 'trained_models/cnn/%s.pth' % opt.model_name)
+    torch.save(network.state_dict(), 'trained_models/cnn_2/%s.pth' % opt.model_name)
 
