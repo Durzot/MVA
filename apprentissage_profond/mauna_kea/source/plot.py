@@ -19,7 +19,7 @@ from matplotlib import cm
 # =========================== PARAMETERS =========================== # 
 parser = argparse.ArgumentParser()
 parser.add_argument('--n_classes', type=int, default=4, help='number of classes')
-parser.add_argument('--n_epoch', type=int, default=200, help='number of epochs to train for')
+parser.add_argument('--n_epoch', type=int, default=100, help='number of epochs to train for')
 parser.add_argument('--model_type', type=str, default='cnn',  help='type of model')
 parser.add_argument('--model_name', type=str, default='MaunaNet4',  help='name of the model for log')
 parser.add_argument('--criterion', type=str, default='cross_entropy',  help='name of the criterion to use')
@@ -40,6 +40,9 @@ if not os.path.exists(log_test_file):
     raise ValueError("File %s does not exist" % log_train_file)
 else:
     df_logs_test = pd.read_csv(log_test_file, header='infer')
+
+if df_logs_train.shape[0] > df_logs_test.shape[0]:
+    df_logs_train = df_logs_train.drop(df_logs_train.index[-1])
 
 # ====================== PLOT LEARNING CURVES ====================== #
 mask = (df_logs_train.model == opt.model_name) & (df_logs_train.crit == opt.criterion) \

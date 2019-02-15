@@ -31,19 +31,21 @@ parser.add_argument('--data_aug', type=int, default=0 , help='1 for data augment
 parser.add_argument('--n_classes', type=int, default=4, help='number of classes')
 parser.add_argument('--n_epoch', type=int, default=100, help='number of epochs to train for')
 parser.add_argument('--st_epoch', type=int, default=0, help='if continuing training, epoch from which to continue')
-parser.add_argument('--model', type=str, default=None,  help='optional reload model path')
+parser.add_argument('--model_type', type=str, default='cnn_3',  help='type of model')
 parser.add_argument('--model_name', type=str, default='BenchMark',  help='name of the model for log')
+parser.add_argument('--model', type=str, default=None,  help='optional reload model path')
 parser.add_argument('--criterion', type=str, default='cross_entropy',  help='name of the criterion to use')
 parser.add_argument('--optimizer', type=str, default='adam',  help='name of the optimizer to use')
 parser.add_argument('--lr', type=float, default=1e-3,  help='learning rate')
 parser.add_argument('--cuda', type=int, default=0, help='set to 1 to use cuda')
+parser.add_argument('--random_state', type=int, default=0, help='random state for the split of data')
 opt = parser.parse_args()
 
 # ========================== TRAINING AND TEST DATA ========================== #
-dataset_train = MaunaKea(train=True, data_aug=opt.data_aug)
+dataset_train = MaunaKea(train=True, data_aug=opt.data_aug, random_state=opt.random_state)
 loader_train = torch.utils.data.DataLoader(dataset_train, batch_size=opt.batch_size, shuffle=True, num_workers=opt.workers)
 
-dataset_test = MaunaKea(train=False, data_aug=opt.data_aug)
+dataset_test = MaunaKea(train=False, data_aug=opt.data_aug, random_state=opt.random_state)
 loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=opt.batch_size, shuffle=False, num_workers=opt.workers)
 
 print('training set size %d' % len(dataset_train))
@@ -75,16 +77,20 @@ else:
     raise ValueError("Please choose 'cross_entropy' for --criterion")
 
 # ====================== DEFINE STUFF FOR LOGS ====================== #
-log_path = os.path.join('log', 'cnn_2')
+log_path = os.path.join('log', opt.model_type)
 if not os.path.exists(log_path):
     os.mkdir(log_path)
 
 log_file = os.path.join(log_path, 'cnn_%s.txt' % opt.model_name)
 with open(log_file, 'a') as log:
     log.write(str(network) + '\n')
+    log.write("train patients %s\n" % dataset_train._train_pat)
+    log.write("train labels %s\n" % np.bincount([x[1] for x in dataset_train._data]))
+    log.write("test patients %s\n" % dataset_test._test_pat)
+    log.write("test labels %s\n\n" % np.bincount([x[1] for x in dataset_test._data]))
 
-log_train_file = "./log/cnn_2/logs_train_%s.csv" % opt.model_name
-log_test_file = "./log/cnn_2/logs_test_%s.csv" % opt.model_name
+log_train_file = "./log/%s/logs_train_%s.csv" % (opt.model_type, opt.model_name)
+log_test_file = "./log/%s/logs_test_%s.csv" % (opt.model_type, opt.model_name)
 
 if not os.path.exists(log_train_file): 
     df_logs_train = pd.DataFrame(columns=['model', 'epoch', 'n_epoch', 'date', 'loss', 'acc', 'lr', 'optim', 'crit',
@@ -216,5 +222,5 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
     df_logs_test.to_csv(log_test_file, header=True, index=False)
     
     print("Saving net")
-    torch.save(network.state_dict(), 'trained_models/cnn_2/%s.pth' % opt.model_name)
+    torch.save(network.state_dict(), 'trained_models/%s/%s.pth' % (opt.model_type, opt.model_name))
 

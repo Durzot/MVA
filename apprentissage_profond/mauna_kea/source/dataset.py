@@ -84,18 +84,26 @@ class MaunaKea(data.Dataset):
             self.transforms = transforms.Compose(
                 [transforms.CenterCrop(456),
                  transforms.ToTensor()])
-       
-        train_idx, test_idx = train_test_split(self.label_img.index, 
-                                               test_size=self.test_size,
-                                               stratify=self.label_img.class_number,
-                                               random_state=self.random_state)
 
-        for idx, row in self.label_img.iterrows():
-            if self.train and idx in train_idx:
+#        Wrong way to split
+#        train_idx, test_idx = train_test_split(self.label_img.index, 
+#                                               test_size=self.test_size,
+#                                               stratify=self.label_img.class_number,
+#                                               random_state=self.random_state)
+
+        patient_col = self.label_img.image_filename.apply(lambda x: x.split("_")[-1].split(".")[0]).astype(int)
+        self.label_img.insert(0, column='patient', value=patient_col)     
+
+        self._train_pat, self._test_pat = train_test_split(self.label_img.patient.unique(), 
+                                                           test_size=self.test_size,
+                                                           random_state=self.random_state)
+
+        for _, row in self.label_img.iterrows():
+            if self.train and row['patient'] in self._train_pat:
                 path = os.path.join(root_img, row['image_filename'])
                 label = row['class_number']
                 self._data.append((path, label))
-            elif not self.train and idx in test_idx:
+            elif not self.train and row['patient'] in self._test_pat:
                 path = os.path.join(root_img, row['image_filename'])
                 label = row['class_number']
                 self._data.append((path, label))
