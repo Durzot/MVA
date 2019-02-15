@@ -26,6 +26,7 @@ parser.add_argument('--workers', type=int, default=1, help='number of data loadi
 parser.add_argument('--data_aug', type=int, default=0 , help='1 for data augmentation')
 parser.add_argument('--n_classes', type=int, default=4, help='number of classes')
 parser.add_argument('--model_path', type=str, default="trained_models/cnn_2/MaunaNet4_40.pth", help='dir where model is saved')
+parser.add_argument('--model_type', type=str, default="cnn_2", help='model type')
 parser.add_argument('--model_name', type=str, default="MaunaNet4",  help='optional reload model path')
 parser.add_argument('--cuda', type=int, default=0, help='set to 1 to use cuda')
 opt = parser.parse_args()
@@ -55,7 +56,7 @@ else:
 print("Weights from %s loaded" % opt.model_path)
 
 df_test = pd.DataFrame(columns=['image_filename', 'class_number'])
-test_file = "./submissions/sub_%s.csv" % opt.model_name
+test_file = "./submissions/%s/sub_%s.csv" % (opt.model_type, opt.model_name)
 
 # ====================== TESTING LOOP ====================== #
 st_time = time.time()
