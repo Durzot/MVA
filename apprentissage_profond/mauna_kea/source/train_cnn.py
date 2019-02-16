@@ -82,12 +82,13 @@ if not os.path.exists(log_path):
     os.mkdir(log_path)
 
 log_file = os.path.join(log_path, 'cnn_%s.txt' % opt.model_name)
-with open(log_file, 'a') as log:
-    log.write(str(network) + '\n')
-    log.write("train patients %s\n" % dataset_train._train_pat)
-    log.write("train labels %s\n" % np.bincount([x[1] for x in dataset_train._data]))
-    log.write("test patients %s\n" % dataset_test._test_pat)
-    log.write("test labels %s\n\n" % np.bincount([x[1] for x in dataset_test._data]))
+if not os.path.exists(log_train_file):
+    with open(log_file, 'a') as log:
+        log.write(str(network) + '\n')
+        log.write("train patients %s\n" % dataset_train._train_pat)
+        log.write("train labels %s\n" % np.bincount([x[1] for x in dataset_train._data]))
+        log.write("test patients %s\n" % dataset_test._test_pat)
+        log.write("test labels %s\n\n" % np.bincount([x[1] for x in dataset_test._data]))
 
 log_train_file = "./log/%s/logs_train_%s.csv" % (opt.model_type, opt.model_name)
 log_test_file = "./log/%s/logs_test_%s.csv" % (opt.model_type, opt.model_name)
