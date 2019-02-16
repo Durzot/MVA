@@ -82,7 +82,7 @@ if not os.path.exists(log_path):
     os.mkdir(log_path)
 
 log_file = os.path.join(log_path, 'cnn_%s.txt' % opt.model_name)
-if not os.path.exists(log_train_file):
+if not os.path.exists(log_file):
     with open(log_file, 'a') as log:
         log.write(str(network) + '\n')
         log.write("train patients %s\n" % dataset_train._train_pat)
