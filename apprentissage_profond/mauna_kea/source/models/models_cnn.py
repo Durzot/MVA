@@ -26,7 +26,7 @@ class BenchMark(nn.Module):
         self.drop3 = nn.Dropout2d(p=0.2)
         
         self.fc1 = nn.Linear(1568, n_classes)
-        self.softmax = nn.Softmax(n_classes)
+        self.softmax = nn.Softmax()
 
     def forward(self, x):
         # input is (bs, 1, 456, 456)
@@ -53,7 +53,7 @@ class BenchMarkAug(nn.Module):
         self.drop3 = nn.Dropout2d(p=0.2)
         
         self.fc1 = nn.Linear(576, n_classes)
-        self.softmax = nn.Softmax(n_classes)
+        self.softmax = nn.Softmax()
 
     def forward(self, x):
         # input is (bs, 1, 224, 224)
@@ -83,6 +83,7 @@ class BenchMarkAugBn(nn.Module):
         self.drop3 = nn.Dropout2d(p=0.2)
         
         self.fc1 = nn.Linear(576, n_classes)
+        self.softmax = nn.Softmax()
 
     def forward(self, x):
         # input is (bs, 1, 224, 224)
@@ -91,7 +92,7 @@ class BenchMarkAugBn(nn.Module):
         x = self.pool3(self.drop3(F.relu(self.bn3(self.conv3(x)))))
     
         x = x.view(x.size(0), -1)
-        x = torch.tanh(self.fc1(x))
+        x = self.softmax(self.fc1(x))
         return x
 
 class MaunaNet4(nn.Module):
@@ -113,6 +114,7 @@ class MaunaNet4(nn.Module):
         
         self.avgpool = nn.AvgPool2d(2)                                                                 # (256, 1, 1)
         self.fc1 = nn.Linear(256, n_classes)
+        self.softmax = nn.Softmax()
 
     def forward(self, x):
         # input is (bs, 1, 456, 456)
@@ -123,7 +125,7 @@ class MaunaNet4(nn.Module):
     
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
-        x = torch.tanh(self.fc1(x))
+        x = self.softmax(self.fc1(x))
         return x
 
 class MaunaNet4Drop(nn.Module):
@@ -149,6 +151,7 @@ class MaunaNet4Drop(nn.Module):
         
         self.avgpool = nn.AvgPool2d(2)                                                                 # (256, 1, 1)
         self.fc1 = nn.Linear(256, n_classes)
+        self.softmax = nn.Softmax()
 
     def forward(self, x):
         # input is (bs, 1, 456, 456)
@@ -159,7 +162,7 @@ class MaunaNet4Drop(nn.Module):
     
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
-        x = torch.tanh(self.fc1(x))
+        x = self.softmax(self.fc1(x))
         return x
 
 class MaunaNet4Aug(nn.Module):
@@ -181,6 +184,7 @@ class MaunaNet4Aug(nn.Module):
         
         self.avgpool = nn.AvgPool2d(7)                                                                 # (256, 1, 1)
         self.fc1 = nn.Linear(256, n_classes)
+        self.softmax = nn.Softmax()
 
     def forward(self, x):
         # input is (bs, 1, 224, 224)
@@ -191,7 +195,7 @@ class MaunaNet4Aug(nn.Module):
     
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
-        x = torch.tanh(self.fc1(x))
+        x = self.softmax(self.fc1(x))
         return x
 
 class MaunaNet4AugDrop(nn.Module):
@@ -217,6 +221,7 @@ class MaunaNet4AugDrop(nn.Module):
         
         self.avgpool = nn.AvgPool2d(7)                                                                 # (256, 1, 1)
         self.fc1 = nn.Linear(256, n_classes)
+        self.softmax = nn.Softmax()
 
     def forward(self, x):
         # input is (bs, 1, 224, 224)
@@ -227,5 +232,5 @@ class MaunaNet4AugDrop(nn.Module):
     
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
-        x = torch.tanh(self.fc1(x))
+        x = self.softmax(self.fc1(x))
         return x
