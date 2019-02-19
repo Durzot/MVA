@@ -16,9 +16,9 @@ import datetime
 
 import torch
 sys.path.append("./source")
-from dataset import *
-from models import *
-from utils import *
+from auxiliary.dataset import *
+from auxiliary.utils import *
+from models.models_cnn import *
 
 def get_time():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M") 

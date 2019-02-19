@@ -26,6 +26,7 @@ class BenchMark(nn.Module):
         self.drop3 = nn.Dropout2d(p=0.2)
         
         self.fc1 = nn.Linear(1568, n_classes)
+        self.softmax = nn.Softmax(n_classes)
 
     def forward(self, x):
         # input is (bs, 1, 456, 456)
@@ -34,7 +35,7 @@ class BenchMark(nn.Module):
         x = self.pool3(self.drop3(F.relu(self.conv3(x))))
     
         x = x.view(x.size(0), -1)
-        x = torch.tanh(self.fc1(x))
+        x= self.softmax(self.fc1(x))
         return x
 
 class BenchMarkAug(nn.Module):
@@ -52,6 +53,7 @@ class BenchMarkAug(nn.Module):
         self.drop3 = nn.Dropout2d(p=0.2)
         
         self.fc1 = nn.Linear(576, n_classes)
+        self.softmax = nn.Softmax(n_classes)
 
     def forward(self, x):
         # input is (bs, 1, 224, 224)
@@ -60,7 +62,7 @@ class BenchMarkAug(nn.Module):
         x = self.pool3(self.drop3(F.relu(self.conv3(x))))
     
         x = x.view(x.size(0), -1)
-        x = torch.tanh(self.fc1(x))
+        x = self.softmax(self.fc1(x))
         return x
 
 class BenchMarkAugBn(nn.Module):

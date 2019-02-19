@@ -15,9 +15,9 @@ import time
 import datetime
 
 sys.path.append("./source")
-from dataset import *
-from models import *
-from utils import *
+from auxiliary.dataset import *
+from auxiliary.utils import *
+from models.models_cnn import *
 
 # =========================== PARAMETERS =========================== # 
 parser = argparse.ArgumentParser()
