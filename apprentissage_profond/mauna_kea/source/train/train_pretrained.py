@@ -27,13 +27,13 @@ def get_time():
 parser = argparse.ArgumentParser()
 parser.add_argument('--batch_size', type=int, default=64, help='input batch size')
 parser.add_argument('--workers', type=int, default=1, help='number of data loading workers')
-parser.add_argument('--data_aug', type=int, default=2 , help='1 or more for data augmentation')
+parser.add_argument('--data_aug', type=int, default=0 , help='1 or more for data augmentation')
 parser.add_argument('--n_classes', type=int, default=4, help='number of classes')
 parser.add_argument('--n_epoch', type=int, default=100, help='number of epochs to train for')
 parser.add_argument('--st_epoch', type=int, default=0, help='if continuing training, epoch from which to continue')
 parser.add_argument('--model_type', type=str, default='pretrained_test',  help='type of model')
 parser.add_argument('--model_name', type=str, default='AlexNet',  help='name of the model for log')
-parser.add_argument('--fz_depth', type=int, default=13,  help='depth of freezed layers')
+parser.add_argument('--fz_depth', type=int, default=10,  help='depth of freezed layers')
 parser.add_argument('--model', type=str, default=None,  help='optional reload model path')
 parser.add_argument('--criterion', type=str, default='cross_entropy',  help='name of the criterion to use')
 parser.add_argument('--optimizer', type=str, default='sgd',  help='name of the optimizer to use')
@@ -135,8 +135,8 @@ log_train_file = "./log/%s/logs_train_%s_fz_%d.csv" % (opt.model_type, opt.model
 log_test_file = "./log/%s/logs_test_%s_fz_%d.csv" % (opt.model_type, opt.model_name, opt.fz_depth)
 
 if not os.path.exists(log_train_file): 
-    df_logs_train = pd.DataFrame(columns=['model', 'fz_depth', 'epoch', 'n_epoch', 'date', 'loss', 'acc', 'lr', 'optim', 
-                                          'crit',
+    df_logs_train = pd.DataFrame(columns=['model', 'fz_depth', 'data_aug', 'epoch', 'n_epoch', 'date', 'loss', 'acc', 
+                                          'lr', 'optim', 'crit',
                                           'pred_0_0', 'pred_0_1', 'pred_0_2', 'pred_0_3',
                                           'pred_1_0', 'pred_1_1', 'pred_1_2', 'pred_1_3', 
                                           'pred_2_0', 'pred_2_1', 'pred_2_2', 'pred_2_3', 
@@ -145,8 +145,8 @@ else:
     df_logs_train = pd.read_csv(log_train_file, header='infer')
 
 if not os.path.exists(log_test_file):
-    df_logs_test = pd.DataFrame(columns=['model', 'fz_depth', 'epoch', 'n_epoch', 'date', 'loss', 'acc', 'lr', 'optim', 
-                                         'crit',
+    df_logs_test = pd.DataFrame(columns=['model', 'fz_depth', 'data_aug', 'epoch', 'n_epoch', 'date', 'loss', 'acc', 
+                                         'lr', 'optim', 'crit',
                                          'pred_0_0', 'pred_0_1', 'pred_0_2', 'pred_0_3',
                                          'pred_1_0', 'pred_1_1', 'pred_1_2', 'pred_1_3', 
                                          'pred_2_0', 'pred_2_1', 'pred_2_2', 'pred_2_3', 
@@ -199,6 +199,7 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
 
     row_train = {'model': opt.model_name, 
                  'fz_depth': opt.fz_depth,
+                 'data_aug': opt.data_aug,
                  'epoch': epoch+1, 
                  'n_epoch': opt.n_epoch, 
                  'date': get_time(), 
@@ -264,6 +265,7 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
                 pred = output.cpu().data.numpy().argmax(axis=1)
                 label = label.cpu().data.numpy()
                 value_meter_test.update(pred, label, opt.batch_size)
+            loss_test = float(loss_test.cpu())/n_batch
     
     dt = time.time()-st_time
     s_time = "%d min %d sec" % (dt//60, dt%60)
@@ -281,6 +283,7 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
     
     row_test = {'model': opt.model_name,
                 'fz_depth': opt.fz_depth,
+                'data_aug': opt.data_aug,
                 'epoch': epoch+1, 
                 'n_epoch': opt.n_epoch, 
                 'date': get_time(), 
@@ -300,4 +303,4 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
     print("Saving net")
     torch.save(network.state_dict(), os.path.join(save_path, '%s_fz_%d.pth' % (opt.model_name, opt.fz_depth)))
 
-
+# python source/train/train_pretrained.py --data_aug 0 --n_epoch 100 --model_type pretrained_2 --model_name AlexNet --fz_depth 8 --lr 0.01 --cuda 1 --random_state 10
