@@ -247,6 +247,8 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
                 print("Pass [%d/%d] over test data over" % (i+1, opt.data_aug))
                       
             print(df.head())
+            with open(log_file, 'a') as log:
+                log.write(df.head())
             # Predictions are the most frequently predicted label across the different crops
             pred = df.loc[:, [x for x in df.columns if 'pred' in x]].mode(axis=1).values[:, 0].astype(int)
             label = df.label.values.astype(int)
