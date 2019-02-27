@@ -37,7 +37,7 @@ parser.add_argument('--fz_depth', type=int, default=13,  help='depth of freezed 
 parser.add_argument('--model', type=str, default=None,  help='optional reload model path')
 parser.add_argument('--criterion', type=str, default='cross_entropy',  help='name of the criterion to use')
 parser.add_argument('--optimizer', type=str, default='sgd',  help='name of the optimizer to use')
-parser.add_argument('--lr', type=float, default=1e-2,  help='learning rate')
+parser.add_argument('--lr', type=float, default=1e-3,  help='learning rate')
 parser.add_argument('--cuda', type=int, default=0, help='set to 1 to use cuda')
 parser.add_argument('--random_state', type=int, default=0, help='random state for the split of data')
 opt = parser.parse_args()
@@ -123,9 +123,9 @@ if not os.path.exists(log_file):
             for nl, layer in list(child.named_children()):  
                 for param in layer.parameters(): 
                     if param.requires_grad:
-                        log.write("Child %s layer %s param is not frozen" % (nc, nl))
+                        log.write("Child %s layer %s param is not frozen\n" % (nc, nl))
                     else: 
-                        log.write("Child %s layer %s param is frozen" % (nc, nl))
+                        log.write("Child %s layer %s param is frozen\n" % (nc, nl))
         log.write("train patients %s\n" % dataset_train._train_pat)
         log.write("train labels %s\n" % np.bincount([x[1] for x in dataset_train._data]))
         log.write("test patients %s\n" % dataset_test._test_pat)
