@@ -18,23 +18,24 @@ import torch
 sys.path.append("./source")
 from auxiliary.dataset import *
 from auxiliary.utils import *
-from cnn_finetune import make_model
+from models.models_cnn import *
 
 # =========================== PARAMETERS =========================== # 
 parser = argparse.ArgumentParser()
 parser.add_argument('--batch_size', type=int, default=64, help='input batch size')
 parser.add_argument('--workers', type=int, default=1, help='number of data loading workers')
-parser.add_argument('--data_aug', type=int, default=0 , help='1 for data augmentation')
+parser.add_argument('--data_aug', type=int, default=0 , help='1 or more for data augmentation')
 parser.add_argument('--n_classes', type=int, default=4, help='number of classes')
-parser.add_argument('--model_path', type=str, default="trained_models/pretrained_1/alexnet_default_6.pth", help='dir where model is saved')
-parser.add_argument('--model_type', type=str, default='pretrained_1',  help='type of model')
-parser.add_argument('--model_name', type=str, default='alexnet',  help='name of the model for log')
-parser.add_argument('--clf_name', type=str, default='default',  help='name of the classifier for log')
+parser.add_argument('--model_type', type=str, default='pretrained_2',  help='type of model')
+parser.add_argument('--model_name', type=str, default='AlexNet',  help='name of the model for log')
+parser.add_argument('--fz_depth', type=int, default=10,  help='depth of freezed layers')
 parser.add_argument('--cuda', type=int, default=0, help='set to 1 to use cuda')
 opt = parser.parse_args()
 
-if not os.path.exists(opt.model_path):
-    raise ValueError("There is no model %s" % opt.model_path)
+model_path = 'trained_models/%s/%s_fz_%d.pth' % (opt.model_type, opt.model_name, opt.fz_depth)
+
+if not os.path.exists(model_path):
+    raise ValueError("There is no model %s" % model_path)
 
 # ========================== TEST DATA ========================== #
 dataset_test_1 = MaunaKeaTest(root_img="./data/TestSetImagesDir/part_1", data_aug=opt.data_aug)
@@ -47,21 +48,18 @@ print('test set 1 size %d' % len(dataset_test_1))
 print('test set 2 size %d' % len(dataset_test_2))
 
 # ========================== NETWORK ========================== #
-if opt.clf_name == 'default':
-    network = make_model(opt.model_name, num_classes=opt.n_classes, pretrained=True, input_size=(224, 224))
-else:
-    raise ValueError("Unsupported option %s for clf_name" % opt.clf_name)
+network = eval("%s(n_classes=opt.n_classes, fz_depth=opt.fz_depth)" % opt.model_name)
 
 if opt.cuda:
-    network.load_state_dict(torch.load(opt.model_path))
+    network.load_state_dict(torch.load(model_path))
     network.cuda()
 else:
-    network.load_state_dict(torch.load(opt.model_path, map_location='cpu'))
+    network.load_state_dict(torch.load(model_path, map_location='cpu'))
 
-print("Weights from %s loaded" % opt.model_path)
+print("Weights from %s loaded" % model_path)
 
 df_test = pd.DataFrame(columns=['image_filename', 'class_number'])
-test_file = "./submissions/%s/sub_%s_%s.csv" % (opt.model_type, opt.model_name, opt.clf_name)
+test_file = "./submissions/%s/sub_%s_fz_%d.csv" % (opt.model_type, opt.model_name, opt.fz_depth)
 
 if not os.path.exists("./submissions/%s" % opt.model_type):
     os.mkdir("./submissions/%s" % opt.model_type)
@@ -85,7 +83,12 @@ for loader_test in [loader_test_1, loader_test_2]:
 
 dt = time.time()-st_time
 print("%d min %d sec" % (dt//60, dt%60))
-    
+
+df_test_order = pd.read_csv('./data/test_data_order.csv', header='infer')
+df_test = df_test.set_index('image_filename')
+df_test = df_test.reindex(index=df_test_order['image_filename'])
+df_test = df_test.reset_index()
+
 df_test.to_csv(test_file, header=True, index=False)
 
 
