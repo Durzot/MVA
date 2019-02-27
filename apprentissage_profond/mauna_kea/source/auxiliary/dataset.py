@@ -186,17 +186,17 @@ class MaunaKea(data.Dataset):
         for _, row in self.label_img.iterrows():
             if self.train and row['patient'] in self._train_pat:
                 fn = row['image_filename']
-                path = os.path.join(root_img, fn)
                 label = row['class_number']
-                self._data.append((fn, path, label))
+                path = os.path.join(root_img, fn)
+                self._data.append((fn, label, path))
             elif not self.train and row['patient'] in self._test_pat:
                 fn = row['image_filename']
-                path = os.path.join(root_img, fn)
                 label = row['class_number']
-                self._data.append((fn, path, label))
+                path = os.path.join(root_img, fn)
+                self._data.append((fn, label, path))
                 
     def __getitem__(self, index):
-        fn, path, label = self._data[index]
+        fn, label, path = self._data[index]
         if self.rbg:
             img = self.transforms(Image.open(path))
         else:
