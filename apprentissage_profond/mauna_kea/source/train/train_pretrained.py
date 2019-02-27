@@ -135,8 +135,8 @@ log_train_file = "./log/%s/logs_train_%s_fz_%d.csv" % (opt.model_type, opt.model
 log_test_file = "./log/%s/logs_test_%s_fz_%d.csv" % (opt.model_type, opt.model_name, opt.fz_depth)
 
 if not os.path.exists(log_train_file): 
-    df_logs_train = pd.DataFrame(columns=['model', 'fz_depth', 'data_aug', 'epoch', 'n_epoch', 'date', 'loss', 'acc', 
-                                          'lr', 'optim', 'crit',
+    df_logs_train = pd.DataFrame(columns=['model', 'fz_depth', 'data_aug', 'random_state', 'epoch', 'n_epoch', 'date', 
+                                          'loss', 'acc', 'lr', 'optim', 'crit',
                                           'pred_0_0', 'pred_0_1', 'pred_0_2', 'pred_0_3',
                                           'pred_1_0', 'pred_1_1', 'pred_1_2', 'pred_1_3', 
                                           'pred_2_0', 'pred_2_1', 'pred_2_2', 'pred_2_3', 
@@ -145,8 +145,8 @@ else:
     df_logs_train = pd.read_csv(log_train_file, header='infer')
 
 if not os.path.exists(log_test_file):
-    df_logs_test = pd.DataFrame(columns=['model', 'fz_depth', 'data_aug', 'epoch', 'n_epoch', 'date', 'loss', 'acc', 
-                                         'lr', 'optim', 'crit',
+    df_logs_test = pd.DataFrame(columns=['model', 'fz_depth', 'data_aug', 'random_state', 'epoch', 'n_epoch', 'date', 
+                                         'loss', 'acc', 'lr', 'optim', 'crit',
                                          'pred_0_0', 'pred_0_1', 'pred_0_2', 'pred_0_3',
                                          'pred_1_0', 'pred_1_1', 'pred_1_2', 'pred_1_3', 
                                          'pred_2_0', 'pred_2_1', 'pred_2_2', 'pred_2_3', 
@@ -200,6 +200,7 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
     row_train = {'model': opt.model_name, 
                  'fz_depth': opt.fz_depth,
                  'data_aug': opt.data_aug,
+                 'random_state': opt.random_state,
                  'epoch': epoch+1, 
                  'n_epoch': opt.n_epoch, 
                  'date': get_time(), 
@@ -284,6 +285,7 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
     row_test = {'model': opt.model_name,
                 'fz_depth': opt.fz_depth,
                 'data_aug': opt.data_aug,
+                'random_state': opt.random_state,
                 'epoch': epoch+1, 
                 'n_epoch': opt.n_epoch, 
                 'date': get_time(), 
