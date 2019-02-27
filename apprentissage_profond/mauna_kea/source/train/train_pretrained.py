@@ -18,7 +18,7 @@ import torch
 sys.path.append("./source")
 from auxiliary.dataset import *
 from auxiliary.utils import *
-from cnn_finetune import make_model
+from models.models_cnn import *
 
 def get_time():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M") 
@@ -32,8 +32,8 @@ parser.add_argument('--n_classes', type=int, default=4, help='number of classes'
 parser.add_argument('--n_epoch', type=int, default=100, help='number of epochs to train for')
 parser.add_argument('--st_epoch', type=int, default=0, help='if continuing training, epoch from which to continue')
 parser.add_argument('--model_type', type=str, default='pretrained_test',  help='type of model')
-parser.add_argument('--model_name', type=str, default='alexnet',  help='name of the model for log')
-parser.add_argument('--fz_depth', type=int, default=10,  help='depth of freezed layers')
+parser.add_argument('--model_name', type=str, default='AlexNet',  help='name of the model for log')
+parser.add_argument('--fz_depth', type=int, default=13,  help='depth of freezed layers')
 parser.add_argument('--model', type=str, default=None,  help='optional reload model path')
 parser.add_argument('--criterion', type=str, default='cross_entropy',  help='name of the criterion to use')
 parser.add_argument('--optimizer', type=str, default='sgd',  help='name of the optimizer to use')
@@ -55,47 +55,41 @@ print('test set size %d' % len(dataset_test))
 n_batch = len(dataset_train)//opt.batch_size + 1
 
 # ========================== NETWORK AND OPTIMIZER ========================== #
-network = make_model(opt.model_name, num_classes=opt.n_classes, pretrained=True, input_size=(224, 224))
+network = eval("%s(n_classes=opt.n_classes, fz_depth=opt.fz_depth)" % opt.model_name)
 
-if opt.model_name == 'alexnet':
-    # Freeze parameters of first layers 
-    b = 0
-    layers = list(network.children())
-    for i in range(opt.fz_depth):
-        for param in layers[b][i].parameters():
-            param.requires_grad = False
-        if i+1 == len(layers[b]): # Move to following block
-            b += 1
+if opt.model is not None:
+    network.load_state_dict(torch.load(opt.model))
+    print("Weights from %s loaded" % opt.model)
 
-elif opt.model_name == "densenet121":
-    # Let weights of first 2 layers unchanged
-    for param in list(model.children())[0][0].parameters():
-        param.requires_grad = False
-    for param in list(model.children())[0][1].parameters():
-        param.requires_grad = False
-
-    # _Dense Block is composed of 6 dense layers
-    # Let weights of first 3 layers unchanged
-    for i in range(3):
-        for param in list(model.children())[0][4][i].parameters():
-            param.requires_grad = False
-
-elif opt.model_name == "inception_v3":
-    # First 7 layers of inception_v3 are BasicConv2d and MaxPool2D
-    # Next 4 are InceptionA layers
-    for i in range(11):
-        for param in list(model.children())[0][i].parameters():
-            param.requires_grad = False
-
-elif opt.model_name == "se_resnet50":
-    # CUDA memory is enough to update all parameters
-    pass
-
-elif opt.model_name == "inceptionresnetv2":
-    # First 15 layers, only update params of last one
-    for i in range(14):
-        for param in list(model.children())[0][i].parameters():
-            param.requires_grad = False
+#elif opt.model_name == "densenet121":
+#    # Let weights of first 2 layers unchanged
+#    for param in list(model.children())[0][0].parameters():
+#        param.requires_grad = False
+#    for param in list(model.children())[0][1].parameters():
+#        param.requires_grad = False
+#
+#    # _Dense Block is composed of 6 dense layers
+#    # Let weights of first 3 layers unchanged
+#    for i in range(3):
+#        for param in list(model.children())[0][4][i].parameters():
+#            param.requires_grad = False
+#
+#elif opt.model_name == "inception_v3":
+#    # First 7 layers of inception_v3 are BasicConv2d and MaxPool2D
+#    # Next 4 are InceptionA layers
+#    for i in range(11):
+#        for param in list(model.children())[0][i].parameters():
+#            param.requires_grad = False
+#
+#elif opt.model_name == "se_resnet50":
+#    # CUDA memory is enough to update all parameters
+#    pass
+#
+#elif opt.model_name == "inceptionresnetv2":
+#    # First 15 layers, only update params of last one
+#    for i in range(14):
+#        for param in list(model.children())[0][i].parameters():
+#            param.requires_grad = False
 
 if opt.cuda:
     network.cuda()
@@ -125,6 +119,13 @@ log_file = os.path.join(log_path, 'pretrained_%s_fz_%d.txt' % (opt.model_name, o
 if not os.path.exists(log_file):
     with open(log_file, 'a') as log:
         log.write(str(network) + '\n')
+        for nc, child in list(network.named_children()): 
+            for nl, layer in list(child.named_children()):  
+                for param in layer.parameters(): 
+                    if param.requires_grad:
+                        log.write("Child %s layer %s param is not frozen" % (nc, nl))
+                    else: 
+                        log.write("Child %s layer %s param is frozen" % (nc, nl)))
         log.write("train patients %s\n" % dataset_train._train_pat)
         log.write("train labels %s\n" % np.bincount([x[1] for x in dataset_train._data]))
         log.write("test patients %s\n" % dataset_test._test_pat)

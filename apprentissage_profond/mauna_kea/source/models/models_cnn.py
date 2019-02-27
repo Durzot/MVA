@@ -9,6 +9,7 @@ Python 3 virtual environment 3.7_pytorch_sk
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision
 import numpy as np
 
 class BenchMark(nn.Module):
@@ -241,37 +242,78 @@ class MaunaNet4AugDrop(nn.Module):
 #########################
 
 class AlexNet(nn.Module):
-    def __init__(self, n_classes=4):
-        super(AlexNet, self).__init__()
-        self.features = nn.Sequential(
-            nn.Conv2d(1, 64, kernel_size=11, stride=4, padding=2),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2),
-            nn.Conv2d(64, 192, kernel_size=5, padding=2),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2),
-            nn.Conv2d(192, 384, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(384, 256, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(256, 256, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=3, stride=2),
-        )
-        self.avgpool = nn.AdaptiveAvgPool2d((6, 6))
-        self.classifier = nn.Sequential(
-            nn.Dropout(),
-            nn.Linear(256 * 6 * 6, 4096),
-            nn.ReLU(inplace=True),
-            nn.Dropout(),
-            nn.Linear(4096, 4096),
-            nn.ReLU(inplace=True),
-            nn.Linear(4096, n_classes),
-        )
+    def __init__(self, n_classes, fz_depth):
+        super(AlexNet,self).__init__()
+        network = torchvision.models.alexnet(pretrained=True)
 
-    def forward(self, x):
-        x = self.features(x)
-        x = self.avgpool(x)
+        # Freeze parameters of first layers 
+        children = iter(list(network.children()))
+        child = next(children)
+        for i in range(fz_depth):
+            for param in child[i].parameters():
+                param.requires_grad = False
+            if i+1 == len(child): # Move to following block
+                child = next(children)
+
+        # Feature layers
+        child = list(network.children())[0]
+        self.conv1 = nn.Sequential(*list(child)[0:3])
+        self.conv2 = nn.Sequential(*list(child)[3:6]) 
+        self.conv3 = nn.Sequential(*list(child)[6:8])
+        self.conv4 = nn.Sequential(*list(child)[8:10])
+        self.conv5 = nn.Sequential(*list(child)[10:13])
+    	    
+        # Classifying layers
+        child = list(network.children())[1]
+        self.fc1 = nn.Sequential(*list(child)[0:3])
+        self.fc2 = nn.Sequential(*list(child)[0:3])
+        self.fc3 = nn.Sequential(nn.Linear(4096, n_classes), nn.Softmax(dim=1))
+
+    def forward(self,x):
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
+        x = self.conv4(x)
+        x = self.conv5(x)
+
         x = x.view(x.size(0), 256 * 6 * 6)
-        x = self.classifier(x)
+        x = self.fc1(x)
+        x = self.fc2(x)
+        x = self.fc3(x)
         return x
+
+#class AlexNet(nn.Module):
+#    def __init__(self, n_classes=4):
+#        super(AlexNet, self).__init__()
+#        self.features = nn.Sequential(
+#            nn.Conv2d(1, 64, kernel_size=11, stride=4, padding=2),
+#            nn.ReLU(inplace=True),
+#            nn.MaxPool2d(kernel_size=3, stride=2),
+#            nn.Conv2d(64, 192, kernel_size=5, padding=2),
+#            nn.ReLU(inplace=True),
+#            nn.MaxPool2d(kernel_size=3, stride=2),
+#            nn.Conv2d(192, 384, kernel_size=3, padding=1),
+#            nn.ReLU(inplace=True),
+#            nn.Conv2d(384, 256, kernel_size=3, padding=1),
+#            nn.ReLU(inplace=True),
+#            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+#            nn.ReLU(inplace=True),
+#            nn.MaxPool2d(kernel_size=3, stride=2),
+#        )
+#        self.avgpool = nn.AdaptiveAvgPool2d((6, 6))
+#        self.classifier = nn.Sequential(
+#            nn.Dropout(),
+#            nn.Linear(256 * 6 * 6, 4096),
+#            nn.ReLU(inplace=True),
+#            nn.Dropout(),
+#            nn.Linear(4096, 4096),
+#            nn.ReLU(inplace=True),
+#            nn.Linear(4096, n_classes),
+#        )
+#
+#    def forward(self, x):
+#        x = self.features(x)
+#        x = self.avgpool(x)
+#        x = x.view(x.size(0), 256 * 6 * 6)
+#        x = self.classifier(x)
+#        return x
