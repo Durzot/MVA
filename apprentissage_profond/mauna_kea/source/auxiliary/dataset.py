@@ -197,7 +197,7 @@ class MaunaKea(data.Dataset):
                 
     def __getitem__(self, index):
         fn, label, path = self._data[index]
-        if self.rbg:
+        if self.rgb:
             img = self.transforms(Image.open(path))
         else:
             img = self.transforms(Image.open(path).convert('L'))
@@ -210,7 +210,7 @@ class MaunaKeaTest(data.Dataset):
     def __init__(self, root_img="./data/TestSetImagesDir/part_1", data_aug=0, rgb=True):
         self.root_img = root_img
         self.data_aug = data_aug
-        self.rbg = rgb
+        self.rgb = rgb
         self._data = []
 
         if self.data_aug:
