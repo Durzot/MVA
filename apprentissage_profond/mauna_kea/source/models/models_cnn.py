@@ -266,7 +266,7 @@ class AlexNet(nn.Module):
         # Classifying layers
         child = list(network.children())[1]
         self.fc1 = nn.Sequential(*list(child)[0:3])
-        self.fc2 = nn.Sequential(*list(child)[0:3])
+        self.fc2 = nn.Sequential(*list(child)[3:6])
         self.fc3 = nn.Sequential(nn.Linear(4096, n_classes), nn.Softmax(dim=1))
 
     def forward(self,x):
