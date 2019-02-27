@@ -125,7 +125,7 @@ if not os.path.exists(log_file):
                     if param.requires_grad:
                         log.write("Child %s layer %s param is not frozen" % (nc, nl))
                     else: 
-                        log.write("Child %s layer %s param is frozen" % (nc, nl)))
+                        log.write("Child %s layer %s param is frozen" % (nc, nl))
         log.write("train patients %s\n" % dataset_train._train_pat)
         log.write("train labels %s\n" % np.bincount([x[1] for x in dataset_train._data]))
         log.write("test patients %s\n" % dataset_test._test_pat)
