@@ -34,7 +34,6 @@ parser.add_argument('--st_epoch', type=int, default=0, help='if continuing train
 parser.add_argument('--model_type', type=str, default='pretrained_test',  help='type of model')
 parser.add_argument('--model_name', type=str, default='alexnet',  help='name of the model for log')
 parser.add_argument('--fz_depth', type=int, default=10,  help='depth of freezed layers')
-parser.add_argument('--clf_name', type=str, default='default',  help='name of the classifier for log')
 parser.add_argument('--model', type=str, default=None,  help='optional reload model path')
 parser.add_argument('--criterion', type=str, default='cross_entropy',  help='name of the criterion to use')
 parser.add_argument('--optimizer', type=str, default='sgd',  help='name of the optimizer to use')
@@ -56,13 +55,7 @@ print('test set size %d' % len(dataset_test))
 n_batch = len(dataset_train)//opt.batch_size + 1
 
 # ========================== NETWORK AND OPTIMIZER ========================== #
-model_name = 'alexnet'
-network = make_model(model_name, num_classes=opt.n_classes, pretrained=True, input_size=(224, 224))
-
-if opt.clf_name == 'default':
-    network = make_model(opt.model_name, num_classes=opt.n_classes, pretrained=True, input_size=(224, 224))
-else:
-    raise ValueError("Unsupported option %s for clf_name" % opt.clf_name)
+network = make_model(opt.model_name, num_classes=opt.n_classes, pretrained=True, input_size=(224, 224))
 
 if opt.model_name == 'alexnet':
     # Freeze parameters of first layers 
@@ -128,7 +121,7 @@ save_path = os.path.join('trained_models', opt.model_type)
 if not os.path.exists(save_path):
     os.mkdir(save_path)
 
-log_file = os.path.join(log_path, 'pretrained_%s.txt' % opt.model_name)
+log_file = os.path.join(log_path, 'pretrained_%s_fz_%d.txt' % (opt.model_name, opt.fz_depth))
 if not os.path.exists(log_file):
     with open(log_file, 'a') as log:
         log.write(str(network) + '\n')
@@ -137,8 +130,8 @@ if not os.path.exists(log_file):
         log.write("test patients %s\n" % dataset_test._test_pat)
         log.write("test labels %s\n\n" % np.bincount([x[1] for x in dataset_test._data]))
 
-log_train_file = "./log/%s/logs_train_%s.csv" % (opt.model_type, opt.model_name)
-log_test_file = "./log/%s/logs_test_%s.csv" % (opt.model_type, opt.model_name)
+log_train_file = "./log/%s/logs_train_%s_fz_%d.csv" % (opt.model_type, opt.model_name, opt.fz_depth)
+log_test_file = "./log/%s/logs_test_%s_fz_%d.csv" % (opt.model_type, opt.model_name, opt.fz_depth)
 
 if not os.path.exists(log_train_file): 
     df_logs_train = pd.DataFrame(columns=['model', 'fz_depth', 'epoch', 'n_epoch', 'date', 'loss', 'acc', 'lr', 'optim', 
@@ -304,6 +297,6 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
     df_logs_test.to_csv(log_test_file, header=True, index=False)
     
     print("Saving net")
-    torch.save(network.state_dict(), os.path.join(save_path, '%s_%s.pth' % (opt.model_name, opt.clf_name)))
+    torch.save(network.state_dict(), os.path.join(save_path, '%s_fz_%d.pth' % (opt.model_name, opt.fz_depth)))
 
 
