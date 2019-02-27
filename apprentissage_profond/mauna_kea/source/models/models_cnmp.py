@@ -16,25 +16,27 @@ class CodingNetwork(nn.Module):
         super(BenchMark, self).__init__()
         self.n_classes = n_classes
         self.conv1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=11, stride=1, padding=0)    # (32, 130, 130)
-        self.conv1 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=11, stride=1, padding=0)   # (32, 120, 120)
-        self.pool1 = nn.MaxPool2d(kernel_size=2)                                                       # (3, 114, 114)
-        self.drop1 = nn.Dropout2d(p=0.2)
-        self.conv2 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, stride=2, padding=1)     # (16, 57, 57)
-        self.pool2 = nn.MaxPool2d(kernel_size=2)                                                       # (16, 28, 28)
-        self.drop2 = nn.Dropout2d(p=0.2)
-        self.conv3 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=2, padding=1)    # (32, 14, 14)
-        self.pool3 = nn.MaxPool2d(kernel_size=2)                                                       # (32, 7, 7)
-        self.drop3 = nn.Dropout2d(p=0.2)
-        
-        self.fc1 = nn.Linear(1568, n_classes)
+        self.conv2 = nn.Conv2d(in_channels=32, out_channels=32, kernel_size=11, stride=1, padding=0)   # (32, 120, 120)
+        self.pool1 = nn.MaxPool2d(kernel_size=5, stride=2)                                             # (32, 58, 58)
+        self.conv3 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=9, stride=1, padding=0)    # (64, 50, 50)
+        self.pool2 = nn.MaxPool2d(kernel_size=5, stride=2)                                             # (64, 23, 23)
+        self.conv4 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=8, stride=1, padding=0)   # (128, 16, 16)
+        self.conv5 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=9, stride=1, padding=0)  # (256, 8, 8)
+        self.conv6 = nn.Conv2d(in_channels=256, out_channels=256, kernel_size=8, stride=1, padding=0)  # (256, 1, 1)
+     
+        self.fc1 = nn.Linear(256, n_classes)
+        self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):
         # input is (bs, 1, 140, 140)
-        x = self.pool1(self.drop1(F.relu(self.conv1(x))))
-        x = self.pool2(self.drop2(F.relu(self.conv2(x))))
-        x = self.pool3(self.drop3(F.relu(self.conv3(x))))
-    
+        x = F.relu(self.conv1(x))
+        x = self.pool1(F.relu(self.conv2(x)))
+        x = self.pool2(F.relu(self.conv3(x)))
+        x = F.relu(self.conv4(x))
+        x = F.relu(self.conv5(x))
+        x = F.relu(self.conv6(x))
+        
         x = x.view(x.size(0), -1)
-        x = torch.tanh(self.fc1(x))
+        x = self.softmax(self.fc1(x))
         return x
 

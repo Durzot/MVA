@@ -9,6 +9,8 @@ import os
 import random
 import numpy as np
 
+from sklearn.base import BaseEstimator, TransformerMixin
+
 def init_weight(m):
     classname = m.__class__.__name__
     if classname.find('Conv') != -1:
@@ -51,3 +53,21 @@ class AccuracyValueMeter(object):
         self.count += size
         self.acc = self.sum_acc/self.count
 
+class Scaler(BaseEstimator, TransformerMixin):
+    def __init__(self, mean=True, norm_ord=2):
+        self.mean = mean
+        self.norm_ord = norm_ord
+    def fit(self, X, y):
+        if self.mean:
+            self.means = X.mean(axis=0)
+            self.scale = np.linalg.norm(X-self.means, ord=self.norm_ord)
+        else:
+            self.scale = np.linalg.norm(X, ord=self.norm_ord)
+        return self
+    def transform(self, X):
+        if self.mean:
+            return (X - self.means)/self.scale
+        else:
+            return X/self.scale
+    def fit_transform(self, X, y):
+        return self.fit(X,y).transform(X)

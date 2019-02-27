@@ -13,11 +13,12 @@ import numpy as np
 import pandas as pd
 import time
 import datetime
+import torch
 
 sys.path.append("./source")
 from auxiliary.dataset import *
 from auxiliary.utils import *
-from models.models_cnn import *
+from cnn_finetune import make_model
 
 # =========================== PARAMETERS =========================== # 
 parser = argparse.ArgumentParser()
@@ -25,9 +26,10 @@ parser.add_argument('--batch_size', type=int, default=64, help='input batch size
 parser.add_argument('--workers', type=int, default=1, help='number of data loading workers')
 parser.add_argument('--data_aug', type=int, default=0 , help='1 for data augmentation')
 parser.add_argument('--n_classes', type=int, default=4, help='number of classes')
-parser.add_argument('--model_path', type=str, default="trained_models/cnn_2/MaunaNet4_40.pth", help='dir where model is saved')
-parser.add_argument('--model_type', type=str, default="cnn_2", help='model type')
-parser.add_argument('--model_name', type=str, default="MaunaNet4",  help='optional reload model path')
+parser.add_argument('--model_path', type=str, default="trained_models/pretrained_1/alexnet_default_6.pth", help='dir where model is saved')
+parser.add_argument('--model_type', type=str, default='pretrained_1',  help='type of model')
+parser.add_argument('--model_name', type=str, default='alexnet',  help='name of the model for log')
+parser.add_argument('--clf_name', type=str, default='default',  help='name of the classifier for log')
 parser.add_argument('--cuda', type=int, default=0, help='set to 1 to use cuda')
 opt = parser.parse_args()
 
@@ -45,7 +47,10 @@ print('test set 1 size %d' % len(dataset_test_1))
 print('test set 2 size %d' % len(dataset_test_2))
 
 # ========================== NETWORK ========================== #
-network = eval("%s(n_classes=opt.n_classes)" % opt.model_name)
+if opt.clf_name == 'default':
+    network = make_model(opt.model_name, num_classes=opt.n_classes, pretrained=True, input_size=(224, 224))
+else:
+    raise ValueError("Unsupported option %s for clf_name" % opt.clf_name)
 
 if opt.cuda:
     network.load_state_dict(torch.load(opt.model_path))
@@ -56,7 +61,7 @@ else:
 print("Weights from %s loaded" % opt.model_path)
 
 df_test = pd.DataFrame(columns=['image_filename', 'class_number'])
-test_file = "./submissions/%s/sub_%s.csv" % (opt.model_type, opt.model_name)
+test_file = "./submissions/%s/sub_%s_%s.csv" % (opt.model_type, opt.model_name, opt.clf_name)
 
 if not os.path.exists("./submissions/%s" % opt.model_type):
     os.mkdir("./submissions/%s" % opt.model_type)
@@ -82,4 +87,5 @@ dt = time.time()-st_time
 print("%d min %d sec" % (dt//60, dt%60))
     
 df_test.to_csv(test_file, header=True, index=False)
+
 

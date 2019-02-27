@@ -17,7 +17,7 @@ matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 
 sys.path.append("./source")
-from dataset import *
+from auxiliary.dataset import *
 
 print(sys.version)
 print(os.getcwd())
@@ -40,6 +40,8 @@ for cl in range(n_classes):
     for n in range(10):
         fig, ax = plt.subplots(nrows=4, ncols=4, figsize=(14, 14))
         ax = ax.flatten()
+
+
         label_shuffle = pd.DataFrame.copy(label_slct.iloc[rand_rows[n*16:(n+1)*16]]).reset_index(drop=True)
     
         for i, row in label_shuffle.iterrows():
@@ -51,3 +53,27 @@ for cl in range(n_classes):
     
         fig.savefig("graphs/class_%d/samples_class_%d_part_%d.png" % (cl, cl, n), format="png")
         plt.close(fig)
+
+fn_img = "./data/TrainingSetImagesDir/im_0_0.png"
+img = Image.open(fn_img).convert("L")
+img = np.array(img)
+
+dataset = MaunaTexturalFeatures()
+X = dataset.get_data()
+
+X_copy = pd.DataFrame.copy(X)
+
+columns = X.columns
+columns_new = []
+for x in X.columns:
+    if 'range' in x:
+        x = x.replace('range', 'std')
+    columns_new.append(x)
+        
+X.columns = columns_new
+
+model = models.__dict__['alexnet'](pretrained=True)
+model = list(model.children())[0]
+output = model(data)
+
+
