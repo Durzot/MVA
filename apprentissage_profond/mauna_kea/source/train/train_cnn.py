@@ -92,7 +92,7 @@ save_path = os.path.join('trained_models', opt.model_type)
 if not os.path.exists(save_path):
     os.mkdir(save_path)
 
-log_file = os.path.join(log_path, 'cnn_%s.txt' % opt.model_name)
+log_file = os.path.join(log_path, 'cnn_%s_%s.txt' % (opt.model_name, opt.optimizer))
 if not os.path.exists(log_file):
     with open(log_file, 'a') as log:
         log.write(str(opt) + '\n\n')
