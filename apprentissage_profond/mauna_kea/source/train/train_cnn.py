@@ -240,6 +240,6 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
     df_logs_test.to_csv(log_test_file, header=True, index=False)
     
     print("Saving net")
-    torch.save(network.state_dict(), os.path.join(save_path, '%s.pth' % opt.model_name))
+    torch.save(network.state_dict(), os.path.join(save_path, '%s_%s.pth' % (opt.model_name, opt.optimizer))
 
 
