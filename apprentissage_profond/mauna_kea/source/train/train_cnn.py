@@ -102,8 +102,8 @@ if not os.path.exists(log_file):
         log.write("test patients %s\n" % dataset_test._test_pat)
         log.write("test labels %s\n\n" % np.bincount([x[1] for x in dataset_test._data]))
 
-log_train_file = "./log/%s/logs_train_%s.csv" % (opt.model_type, opt.model_name)
-log_test_file = "./log/%s/logs_test_%s.csv" % (opt.model_type, opt.model_name)
+log_train_file = "./log/%s/logs_train_%s_%s.csv" % (opt.model_type, opt.model_name, opt.optimizer)
+log_test_file = "./log/%s/logs_test_%s_%s.csv" % (opt.model_type, opt.model_name, opt.optimizer)
 
 if not os.path.exists(log_train_file): 
     df_logs_train = pd.DataFrame(columns=['model', 'epoch', 'n_epoch', 'date', 'loss', 'acc', 'lr', 'optim', 'crit',
@@ -241,4 +241,6 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
     
     print("Saving net")
     torch.save(network.state_dict(), os.path.join(save_path, '%s.pth' % opt.model_name))
+
+python source/train/train_cnn.py --img_size 224 --data_aug 0 --rgb 0 --model_type new_cnn_1 --model_name BenchMarkBn --optimizer adam --lr 0.01 --lr_decay 2 --momentum 0 --cuda 1 --random_state 10
 
