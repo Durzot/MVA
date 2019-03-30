@@ -98,9 +98,9 @@ class MaunaNet3(nn.Module):
 #        x= self.softmax(self.fc1(x))
 #        return x
 
-class BenchMarkAug(nn.Module):
+class BenchMark(nn.Module):
     def __init__(self, n_classes):
-        super(BenchMarkAug, self).__init__()
+        super(BenchMark, self).__init__()
         self.n_classes = n_classes
         self.conv1 = nn.Conv2d(in_channels=1, out_channels=3, kernel_size=3, stride=2, padding=1)      # (3, 112, 112)
         self.pool1 = nn.MaxPool2d(kernel_size=2)                                                       # (3, 56, 56)
@@ -125,9 +125,9 @@ class BenchMarkAug(nn.Module):
         x = self.softmax(self.fc1(x))
         return x
 
-class BenchMarkAugBn(nn.Module):
+class BenchMarkBn(nn.Module):
     def __init__(self, n_classes):
-        super(BenchMarkAugBn, self).__init__()
+        super(BenchMarkBn, self).__init__()
         self.n_classes = n_classes
         self.conv1 = nn.Conv2d(in_channels=1, out_channels=3, kernel_size=3, stride=2, padding=1)      # (3, 112, 112)
         self.bn1 = nn.BatchNorm2d(3)
