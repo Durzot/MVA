@@ -242,5 +242,4 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
     print("Saving net")
     torch.save(network.state_dict(), os.path.join(save_path, '%s.pth' % opt.model_name))
 
-python source/train/train_cnn.py --img_size 224 --data_aug 0 --rgb 0 --model_type new_cnn_1 --model_name BenchMarkBn --optimizer adam --lr 0.01 --lr_decay 2 --momentum 0 --cuda 1 --random_state 10
 
