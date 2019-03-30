@@ -12,32 +12,91 @@ import torch.nn.functional as F
 import torchvision
 import numpy as np
 
-class BenchMark(nn.Module):
+#class BenchMark(nn.Module):
+#    def __init__(self, n_classes):
+#        super(BenchMark, self).__init__()
+#        self.n_classes = n_classes
+#        self.conv1 = nn.Conv2d(in_channels=1, out_channels=3, kernel_size=3, stride=2, padding=1)      # (3, 228, 228)
+#        self.pool1 = nn.MaxPool2d(kernel_size=2)                                                       # (3, 114, 114)
+#        self.drop1 = nn.Dropout2d(p=0.2)
+#        self.conv2 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, stride=2, padding=1)     # (16, 57, 57)
+#        self.pool2 = nn.MaxPool2d(kernel_size=2)                                                       # (16, 28, 28)
+#        self.drop2 = nn.Dropout2d(p=0.2)
+#        self.conv3 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=2, padding=1)    # (32, 14, 14)
+#        self.pool3 = nn.MaxPool2d(kernel_size=2)                                                       # (32, 7, 7)
+#        self.drop3 = nn.Dropout2d(p=0.2)
+#        
+#        self.fc1 = nn.Linear(1568, n_classes)
+#        self.softmax = nn.Softmax()
+#
+#    def forward(self, x):
+#        # input is (bs, 1, 456, 456)
+#        x = self.pool1(self.drop1(F.relu(self.conv1(x))))
+#        x = self.pool2(self.drop2(F.relu(self.conv2(x))))
+#        x = self.pool3(self.drop3(F.relu(self.conv3(x))))
+#    
+#        x = x.view(x.size(0), -1)
+#        x= self.softmax(self.fc1(x))
+#        return x
+
+class MaunaNet3(nn.Module):
     def __init__(self, n_classes):
-        super(BenchMark, self).__init__()
+        super(MaunaNet3, self).__init__()
         self.n_classes = n_classes
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=3, kernel_size=3, stride=2, padding=1)      # (3, 228, 228)
-        self.pool1 = nn.MaxPool2d(kernel_size=2)                                                       # (3, 114, 114)
-        self.drop1 = nn.Dropout2d(p=0.2)
-        self.conv2 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, stride=2, padding=1)     # (16, 57, 57)
-        self.pool2 = nn.MaxPool2d(kernel_size=2)                                                       # (16, 28, 28)
-        self.drop2 = nn.Dropout2d(p=0.2)
-        self.conv3 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=2, padding=1)    # (32, 14, 14)
-        self.pool3 = nn.MaxPool2d(kernel_size=2)                                                       # (32, 7, 7)
-        self.drop3 = nn.Dropout2d(p=0.2)
-        
-        self.fc1 = nn.Linear(1568, n_classes)
-        self.softmax = nn.Softmax()
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=3, kernel_size=5, stride=2, padding=1)       # (3, 197, 197)
+        self.pool1 = nn.MaxPool2d(kernel_size=2)                                                        # (3, 98, 98)
+        self.conv2 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, stride=2, padding=1)      # (16, 48, 48)
+        self.pool2 = nn.MaxPool2d(kernel_size=2)                                                        # (16, 24, 24)
+        self.conv3 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=2, padding=1)     # (32, 12, 12)
+        self.pool3 = nn.MaxPool2d(kernel_size=2)                                                        # (32, 6, 6)
+
+        self.classifier = nn.Sequential(
+            nn.Linear(32 * 6 * 6, 392),
+            nn.ReLU(inplace=True),
+            nn.Linear(392, 64),
+            nn.ReLU(inplace=True),
+            nn.Linear(64, n_classes),
+        )
+        self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):
-        # input is (bs, 1, 456, 456)
-        x = self.pool1(self.drop1(F.relu(self.conv1(x))))
-        x = self.pool2(self.drop2(F.relu(self.conv2(x))))
-        x = self.pool3(self.drop3(F.relu(self.conv3(x))))
+        # input is (bs, 1, 395, 395)
+        x = self.pool1(F.relu(self.conv1(x)))
+        x = self.pool2(F.relu(self.conv2(x)))
+        x = self.pool3(F.relu(self.conv3(x)))
     
         x = x.view(x.size(0), -1)
-        x= self.softmax(self.fc1(x))
-        return x
+        x = self.classifier(x)
+        return self.softmax(x)
+
+
+
+#class BenchMark(nn.Module):
+#    def __init__(self, n_classes):
+#        super(BenchMark, self).__init__()
+#        self.n_classes = n_classes
+#        self.conv1 = nn.Conv2d(in_channels=1, out_channels=16, kernel_size=7, stride=2, padding=1)       # (16, 110, 110)
+#        self.drop1 = nn.Dropout2d(p=0.2)
+#        self.pool1 = nn.MaxPool2d(kernel_size=2)                                                         # (16, 34, 34)
+#        self.conv2 = nn.Conv2d(in_channels=16, out_channels=64, kernel_size=3, stride=1, padding=1)      # (64, 17, 17)
+#        self.drop2 = nn.Dropout2d(p=0.2)
+#        self.pool2 = nn.MaxPool2d(kernel_size=2)                                                         # (64, 8, 8)
+#        self.conv3 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1)     # (128, 2, 2)
+#        self.pool3 = nn.MaxPool2d(kernel_size=2)                                                         # (128, 1, 1)
+#        self.drop3 = nn.Dropout2d(p=0.2)
+#        
+#        self.fc1 = nn.Linear(128, n_classes)
+#        self.softmax = nn.Softmax()
+#
+#    def forward(self, x):
+#        # input is (bs, 1, 224, 224)
+#        x = self.pool1(self.drop1(F.relu(self.conv1(x))))
+#        x = self.pool2(self.drop2(F.relu(self.conv2(x))))
+#        x = self.pool3(self.drop3(F.relu(self.conv3(x))))
+#    
+#        x = x.view(x.size(0), -1)
+#        x= self.softmax(self.fc1(x))
+#        return x
 
 class BenchMarkAug(nn.Module):
     def __init__(self, n_classes):

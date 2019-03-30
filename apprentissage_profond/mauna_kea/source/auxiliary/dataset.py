@@ -154,7 +154,7 @@ class RandomCropCircle(object):
 
 class MaunaKea(data.Dataset):
     def __init__(self, root_img="./data/TrainingSetImagesDir", label_file="./data/TrainingSet_20aimVO.csv", 
-                 test_size=0.2, train=True, data_aug=0, rgb=True, random_state=0):
+                 test_size=0.2, train=True, data_aug=0, rgb=1, img_size=224, random_state=0):
         self.root_img = root_img
         self.label_img = pd.read_csv(label_file)
         self.test_size = test_size
@@ -166,14 +166,14 @@ class MaunaKea(data.Dataset):
 
         if self.data_aug:
             self.transforms = transforms.Compose(
-                [RandomCropCircle(224, radius),
+                [RandomCropCircle(img_size, radius),
                  transforms.RandomHorizontalFlip(),
                  transforms.RandomVerticalFlip(),
                  transforms.ToTensor()])
         else:
             self.transforms = transforms.Compose(
                 [transforms.CenterCrop(395),
-                 transforms.Resize(224, interpolation=2),
+                 transforms.Resize(img_size, interpolation=2),
                  transforms.ToTensor()])
 
         patient_col = self.label_img.image_filename.apply(lambda x: x.split("_")[-1].split(".")[0]).astype(int)
@@ -207,7 +207,7 @@ class MaunaKea(data.Dataset):
         return len(self._data)
 
 class MaunaKeaTest(data.Dataset):
-    def __init__(self, root_img="./data/TestSetImagesDir/part_1", data_aug=0, rgb=True):
+    def __init__(self, root_img="./data/TestSetImagesDir/part_1", data_aug=0, rgb=1, img_size=224):
         self.root_img = root_img
         self.data_aug = data_aug
         self.rgb = rgb
@@ -215,14 +215,14 @@ class MaunaKeaTest(data.Dataset):
 
         if self.data_aug:
             self.transforms = transforms.Compose(
-                [RandomCropCircle(224, radius),
+                [RandomCropCircle(img_size, radius),
                  transforms.RandomHorizontalFlip(),
                  transforms.RandomVerticalFlip(),
                  transforms.ToTensor()])
         else:
             self.transforms = transforms.Compose(
                 [transforms.CenterCrop(395),
-                 transforms.Resize(224, interpolation=2),
+                 transforms.Resize(img_size, interpolation=2),
                  transforms.ToTensor()])
         
         self._fn_img = os.listdir(self.root_img)

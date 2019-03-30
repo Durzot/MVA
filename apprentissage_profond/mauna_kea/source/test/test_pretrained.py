@@ -91,4 +91,19 @@ df_test = df_test.reset_index()
 
 df_test.to_csv(test_file, header=True, index=False)
 
+df_merge = pd.read_csv('./data/test_data_order.csv', header='infer')
+for i in [3, 6, 8, 10, 13]:
+    df = pd.read_csv("submissions/pretrained_2/sub_AlexNet_fz_%d.csv" % i, header='infer')
+    df_merge.loc[:, 'pred_%d' % i] = df.class_number.values
+
+df_merge.loc[:, 'class_number'] = df_merge.loc[:, [x for x in df_merge.columns if 'pred' in x]].mode(axis=1).values[:,
+                                                                                                                    0]
+
+for x in df_merge.columns:
+    if 'pred' in x:
+        del df_merge[x]
+
+df_merge.loc[:, 'class_number'] = df_merge.class_number.astype(int)
+
+df_merge.to_csv('submissions/pretrained_2/sub_alexnet_all.csv', header=True, index=False)
 

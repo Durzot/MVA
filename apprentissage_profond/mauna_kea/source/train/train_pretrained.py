@@ -28,25 +28,29 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--batch_size', type=int, default=64, help='input batch size')
 parser.add_argument('--workers', type=int, default=1, help='number of data loading workers')
 parser.add_argument('--data_aug', type=int, default=0 , help='1 or more for data augmentation')
+parser.add_argument('--img_size', type=int, default=224 , help='size of input images to model')
+parser.add_argument('--rgb', type=int, default=1, help='1 for 3 channel input, 0 for 1 channel input')
 parser.add_argument('--n_classes', type=int, default=4, help='number of classes')
 parser.add_argument('--n_epoch', type=int, default=100, help='number of epochs to train for')
 parser.add_argument('--st_epoch', type=int, default=0, help='if continuing training, epoch from which to continue')
-parser.add_argument('--model_type', type=str, default='pretrained_test',  help='type of model')
+parser.add_argument('--model_type', type=str, default='pretrained_3',  help='type of model')
 parser.add_argument('--model_name', type=str, default='AlexNet',  help='name of the model for log')
 parser.add_argument('--fz_depth', type=int, default=10,  help='depth of freezed layers')
 parser.add_argument('--model', type=str, default=None,  help='optional reload model path')
 parser.add_argument('--criterion', type=str, default='cross_entropy',  help='name of the criterion to use')
 parser.add_argument('--optimizer', type=str, default='sgd',  help='name of the optimizer to use')
 parser.add_argument('--lr', type=float, default=1e-3,  help='learning rate')
+parser.add_argument('--lr_decay', type=float, default=2,  help='decay factor in learning rate')
+parser.add_argument('--momentum', type=float, default=0.99,  help='momentum (only SGD)')
 parser.add_argument('--cuda', type=int, default=0, help='set to 1 to use cuda')
 parser.add_argument('--random_state', type=int, default=0, help='random state for the split of data')
 opt = parser.parse_args()
 
 # ========================== TRAINING AND TEST DATA ========================== #
-dataset_train = MaunaKea(train=True, data_aug=opt.data_aug, rgb=True, random_state=opt.random_state)
+dataset_train = MaunaKea(train=True, data_aug=opt.data_aug, random_state=opt.random_state, rgb=opt.rgb, img_size=opt.img_size)
 loader_train = torch.utils.data.DataLoader(dataset_train, batch_size=opt.batch_size, shuffle=True, num_workers=opt.workers)
 
-dataset_test = MaunaKea(train=False, data_aug=opt.data_aug, rgb=True, random_state=opt.random_state)
+dataset_test = MaunaKea(train=False, data_aug=opt.data_aug, random_state=opt.random_state, rgb=opt.rgb, img_size=opt.img_size)
 loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=opt.batch_size, shuffle=False, num_workers=opt.workers)
 
 print('training set size %d' % len(dataset_train))
@@ -94,12 +98,15 @@ if opt.model is not None:
 if opt.cuda:
     network.cuda()
 
-if opt.optimizer == "adam":
-    optimizer = torch.optim.Adam(network.parameters(), lr=opt.lr)
-elif opt.optimizer == "sgd":
-    optimizer = torch.optim.SGD(network.parameters(), lr=opt.lr)
-else:
-    raise ValueError("Please choose between 'adam' and 'sgd' for the --optimizer")
+def get_optimizer(optimizer, lr, momentum=None):
+    if opt.optimizer == "adam":
+        return torch.optim.Adam(network.parameters(), lr=opt.lr)
+    elif opt.optimizer == "sgd":
+        return torch.optim.SGD(network.parameters(), lr=opt.lr)
+    else:
+        raise ValueError("Please choose between 'adam' and 'sgd' for the --optimizer")
+
+optimizer = get_optimizer(opt.optimizer, opt.lr, opt.momentum)
 
 if opt.criterion == "cross_entropy":
     criterion = torch.nn.CrossEntropyLoss()
@@ -118,14 +125,15 @@ if not os.path.exists(save_path):
 log_file = os.path.join(log_path, 'pretrained_%s_fz_%d.txt' % (opt.model_name, opt.fz_depth))
 if not os.path.exists(log_file):
     with open(log_file, 'a') as log:
+        log.write(str(opt) + '\n\n')
         log.write(str(network) + '\n')
         for nc, child in list(network.named_children()): 
             for nl, layer in list(child.named_children()):  
-                for param in layer.parameters(): 
+                for nparam, param in list(layer.named_parameters()): 
                     if param.requires_grad:
-                        log.write("Child %s layer %s param is not frozen\n" % (nc, nl))
+                        log.write("Child %s layer %s param %s is not frozen\n" % (nc, nl, nparam))
                     else: 
-                        log.write("Child %s layer %s param is frozen\n" % (nc, nl))
+                        log.write("Child %s layer %s param %s is frozen\n" % (nc, nl, nparam))
         log.write("train patients %s\n" % dataset_train._train_pat)
         log.write("train labels %s\n" % np.bincount([x[1] for x in dataset_train._data]))
         log.write("test patients %s\n" % dataset_test._test_pat)
@@ -164,6 +172,11 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
     network.train()
     value_meter_train.reset()
     loss_train = 0
+
+    # LEARNING RATE SCHEDULE
+    if (epoch+1) % 10 == 0:
+        opt.lr /= opt.lr_decay
+        optimizer = get_optimizer(opt.optimizer, opt.lr, opt.momentum)
     
     for batch, (fn, label, data) in enumerate(loader_train):
         if opt.cuda:
