@@ -99,7 +99,7 @@ if not os.path.exists(log_file):
         log.write(str(network) + '\n')
 
         for nparam, param in network.named_parameters():
-            if param.requires_grad = False:
+            if param.requires_grad == False:
                 log.write("Param %s is not frozen\n" % nparam)
             else:
                 log.write("Param %s is not frozen\n" % nparam)
