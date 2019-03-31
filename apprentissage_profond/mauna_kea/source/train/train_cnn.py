@@ -40,7 +40,7 @@ parser.add_argument('--criterion', type=str, default='cross_entropy',  help='nam
 parser.add_argument('--optimizer', type=str, default='sgd',  help='name of the optimizer to use')
 parser.add_argument('--lr', type=float, default=1e-2,  help='learning rate')
 parser.add_argument('--lr_decay', type=float, default=2,  help='decay factor in learning rate')
-parser.add_argument('--momentum', type=float, default=0.99,  help='momentum (only SGD)')
+parser.add_argument('--momentum', type=float, default=0,  help='momentum (only SGD)')
 parser.add_argument('--cuda', type=int, default=0, help='set to 1 to use cuda')
 parser.add_argument('--random_state', type=int, default=0, help='random state for the split of data')
 opt = parser.parse_args()

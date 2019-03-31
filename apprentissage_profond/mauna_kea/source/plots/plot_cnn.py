@@ -20,6 +20,7 @@ from matplotlib import cm
 parser = argparse.ArgumentParser()
 parser.add_argument('--n_classes', type=int, default=4, help='number of classes')
 parser.add_argument('--n_epoch', type=int, default=100, help='number of epochs to train for')
+parser.add_argument('--log_name', type=str, default=None, help='suffix of the log files')
 parser.add_argument('--model_type', type=str, default='cnn',  help='type of model')
 parser.add_argument('--model_name', type=str, default='MaunaNet4',  help='name of the model for log')
 parser.add_argument('--criterion', type=str, default='cross_entropy',  help='name of the criterion to use')
@@ -28,8 +29,8 @@ parser.add_argument('--lr', type=float, default=1e-3,  help='learning rate')
 opt = parser.parse_args()
 
 # =========================== LOAD FILES =========================== # 
-log_train_file = "./log/%s/logs_train_%s.csv" % (opt.model_type, opt.model_name)
-log_test_file = "./log/%s/logs_test_%s.csv" % (opt.model_type, opt.model_name)
+log_train_file = "./log/%s/logs_train_%s.csv" % (opt.model_type, opt.log_name)
+log_test_file = "./log/%s/logs_test_%s.csv" % (opt.model_type, opt.log_name)
 
 if not os.path.exists(log_train_file): 
     raise ValueError("File %s does not exist" % log_train_file)
@@ -46,7 +47,7 @@ if df_logs_train.shape[0] > df_logs_test.shape[0]:
 
 # ====================== PLOT LEARNING CURVES ====================== #
 mask = (df_logs_train.model == opt.model_name) & (df_logs_train.crit == opt.criterion) \
-        & (df_logs_train.optim == opt.optimizer) & (df_logs_train.lr == opt.lr)
+        & (df_logs_train.optim == opt.optimizer) 
 
 graph_dir = "./graphs/%s" % opt.model_type
 graph_file = os.path.join(graph_dir, "lc_%s_crit_%s_optim_%s_lr_%.2g.png" % (opt.model_name, opt.criterion, 
