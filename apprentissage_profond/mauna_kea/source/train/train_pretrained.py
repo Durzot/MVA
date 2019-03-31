@@ -127,13 +127,13 @@ if not os.path.exists(log_file):
     with open(log_file, 'a') as log:
         log.write(str(opt) + '\n\n')
         log.write(str(network) + '\n')
-        for nc, child in list(network.named_children()): 
-            for nl, layer in list(child.named_children()):  
-                for nparam, param in list(layer.named_parameters()): 
-                    if param.requires_grad:
-                        log.write("Child %s layer %s param %s is not frozen\n" % (nc, nl, nparam))
-                    else: 
-                        log.write("Child %s layer %s param %s is frozen\n" % (nc, nl, nparam))
+
+        for nparam, param in network.named_parameters():
+            if param.requires_grad = False
+                log.write("Param %s is not frozen\n" % nparam)
+            else:
+                log.write("Param %s is not frozen\n" % nparam)
+        
         log.write("train patients %s\n" % dataset_train._train_pat)
         log.write("train labels %s\n" % np.bincount([x[1] for x in dataset_train._data]))
         log.write("test patients %s\n" % dataset_test._test_pat)
