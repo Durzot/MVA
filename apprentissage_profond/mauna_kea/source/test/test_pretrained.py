@@ -24,9 +24,11 @@ from models.models_cnn import *
 parser = argparse.ArgumentParser()
 parser.add_argument('--batch_size', type=int, default=64, help='input batch size')
 parser.add_argument('--workers', type=int, default=1, help='number of data loading workers')
+parser.add_argument('--img_size', type=int, default=224 , help='size of input images to model')
+parser.add_argument('--rgb', type=int, default=1, help='1 for 3 channel input, 0 for 1 channel input')
 parser.add_argument('--data_aug', type=int, default=0 , help='1 or more for data augmentation')
 parser.add_argument('--n_classes', type=int, default=4, help='number of classes')
-parser.add_argument('--model_type', type=str, default='pretrained_2',  help='type of model')
+parser.add_argument('--model_type', type=str, default='pretrained_AlexNet_fz',  help='type of model')
 parser.add_argument('--model_name', type=str, default='AlexNet',  help='name of the model for log')
 parser.add_argument('--fz_depth', type=int, default=10,  help='depth of freezed layers')
 parser.add_argument('--cuda', type=int, default=0, help='set to 1 to use cuda')
@@ -38,10 +40,10 @@ if not os.path.exists(model_path):
     raise ValueError("There is no model %s" % model_path)
 
 # ========================== TEST DATA ========================== #
-dataset_test_1 = MaunaKeaTest(root_img="./data/TestSetImagesDir/part_1", data_aug=opt.data_aug)
+dataset_test_1 = MaunaKeaTest(root_img="./data/TestSetImagesDir/part_1", data_aug=opt.data_aug, rgb=opt.rgb, img_size=opt.img_size)
 loader_test_1 = torch.utils.data.DataLoader(dataset_test_1, batch_size=opt.batch_size, shuffle=False, num_workers=opt.workers)
 
-dataset_test_2 = MaunaKeaTest(root_img="./data/TestSetImagesDir/part_2", data_aug=opt.data_aug)
+dataset_test_2 = MaunaKeaTest(root_img="./data/TestSetImagesDir/part_2", data_aug=opt.data_aug, rgb=opt.rgb, img_size=opt.img_size)
 loader_test_2 = torch.utils.data.DataLoader(dataset_test_2, batch_size=opt.batch_size, shuffle=False, num_workers=opt.workers)
 
 print('test set 1 size %d' % len(dataset_test_1))
@@ -90,20 +92,3 @@ df_test = df_test.reindex(index=df_test_order['image_filename'])
 df_test = df_test.reset_index()
 
 df_test.to_csv(test_file, header=True, index=False)
-
-df_merge = pd.read_csv('./data/test_data_order.csv', header='infer')
-for i in [3, 6, 8, 10, 13]:
-    df = pd.read_csv("submissions/pretrained_2/sub_AlexNet_fz_%d.csv" % i, header='infer')
-    df_merge.loc[:, 'pred_%d' % i] = df.class_number.values
-
-df_merge.loc[:, 'class_number'] = df_merge.loc[:, [x for x in df_merge.columns if 'pred' in x]].mode(axis=1).values[:,
-                                                                                                                    0]
-
-for x in df_merge.columns:
-    if 'pred' in x:
-        del df_merge[x]
-
-df_merge.loc[:, 'class_number'] = df_merge.class_number.astype(int)
-
-df_merge.to_csv('submissions/pretrained_2/sub_alexnet_all.csv', header=True, index=False)
-

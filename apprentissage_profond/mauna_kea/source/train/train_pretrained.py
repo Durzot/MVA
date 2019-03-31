@@ -292,4 +292,4 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
     print("Saving net")
     torch.save(network.state_dict(), os.path.join(save_path, '%s_fz_%d.pth' % (opt.model_name, opt.fz_depth)))
 
-# python source/train/train_pretrained.py --data_aug 0 --n_epoch 100 --model_type pretrained_2 --model_name AlexNet --fz_depth 8 --lr 0.01 --cuda 1 --random_state 10
+#python source/train/train_pretrained.py --batch_size 64 --data_aug 0 --img_size 224 --rgb 1 --n_epoch 100 --model_type pretrained_AlexNet_fz_mom --model_name AlexNet --fz_depth 10 --optimizer sgd --lr 0.005 --lr_decay_fact 2 --lr_decay_freq 20 --cuda 1 --random_state 89 --momentum 0.5
