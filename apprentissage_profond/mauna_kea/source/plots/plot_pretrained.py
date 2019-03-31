@@ -47,7 +47,7 @@ if df_logs_train.shape[0] > df_logs_test.shape[0]:
 
 # ====================== PLOT LEARNING CURVES ====================== #
 mask = (df_logs_train.model == opt.model_name) & (df_logs_train.crit == opt.criterion) \
-        & (df_logs_train.optim == opt.optimizer) & (df_logs_train.lr == opt.lr)
+        & (df_logs_train.optim == opt.optimizer)
 
 graph_dir = "./graphs/%s" % opt.model_type
 graph_file = os.path.join(graph_dir, "lc_%s_crit_%s_optim_%s_lr_%.2g_fz_%d.png" % (opt.model_name, opt.criterion, 

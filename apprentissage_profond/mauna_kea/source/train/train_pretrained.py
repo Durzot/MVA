@@ -40,7 +40,8 @@ parser.add_argument('--model', type=str, default=None,  help='optional reload mo
 parser.add_argument('--criterion', type=str, default='cross_entropy',  help='name of the criterion to use')
 parser.add_argument('--optimizer', type=str, default='sgd',  help='name of the optimizer to use')
 parser.add_argument('--lr', type=float, default=1e-3,  help='learning rate')
-parser.add_argument('--lr_decay', type=float, default=2,  help='decay factor in learning rate')
+parser.add_argument('--lr_decay_fact', type=float, default=2,  help='decay factor in learning rate')
+parser.add_argument('--lr_decay_freq', type=int, default=20,  help='decay frequency (in epochs) in learning rate')
 parser.add_argument('--momentum', type=float, default=0,  help='momentum (only SGD)')
 parser.add_argument('--cuda', type=int, default=0, help='set to 1 to use cuda')
 parser.add_argument('--random_state', type=int, default=0, help='random state for the split of data')
@@ -147,8 +148,8 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
     loss_train = 0
 
     # LEARNING RATE SCHEDULE
-    if (epoch+1) % 10 == 0:
-        opt.lr /= opt.lr_decay
+    if (epoch+1) % opt.lr_decay_freq == 0:
+        opt.lr /= opt.lr_decay_fact
         optimizer = get_optimizer(opt.optimizer, opt.lr, opt.momentum)
     
     for batch, (fn, label, data) in enumerate(loader_train):
