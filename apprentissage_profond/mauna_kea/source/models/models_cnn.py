@@ -70,34 +70,6 @@ class MaunaNet3(nn.Module):
         return self.softmax(x)
 
 
-
-#class BenchMark(nn.Module):
-#    def __init__(self, n_classes):
-#        super(BenchMark, self).__init__()
-#        self.n_classes = n_classes
-#        self.conv1 = nn.Conv2d(in_channels=1, out_channels=16, kernel_size=7, stride=2, padding=1)       # (16, 110, 110)
-#        self.drop1 = nn.Dropout2d(p=0.2)
-#        self.pool1 = nn.MaxPool2d(kernel_size=2)                                                         # (16, 34, 34)
-#        self.conv2 = nn.Conv2d(in_channels=16, out_channels=64, kernel_size=3, stride=1, padding=1)      # (64, 17, 17)
-#        self.drop2 = nn.Dropout2d(p=0.2)
-#        self.pool2 = nn.MaxPool2d(kernel_size=2)                                                         # (64, 8, 8)
-#        self.conv3 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1)     # (128, 2, 2)
-#        self.pool3 = nn.MaxPool2d(kernel_size=2)                                                         # (128, 1, 1)
-#        self.drop3 = nn.Dropout2d(p=0.2)
-#        
-#        self.fc1 = nn.Linear(128, n_classes)
-#        self.softmax = nn.Softmax()
-#
-#    def forward(self, x):
-#        # input is (bs, 1, 224, 224)
-#        x = self.pool1(self.drop1(F.relu(self.conv1(x))))
-#        x = self.pool2(self.drop2(F.relu(self.conv2(x))))
-#        x = self.pool3(self.drop3(F.relu(self.conv3(x))))
-#    
-#        x = x.view(x.size(0), -1)
-#        x= self.softmax(self.fc1(x))
-#        return x
-
 class BenchMark(nn.Module):
     def __init__(self, n_classes):
         super(BenchMark, self).__init__()
@@ -305,14 +277,15 @@ class AlexNet(nn.Module):
         super(AlexNet,self).__init__()
         network = torchvision.models.alexnet(pretrained=True)
 
-        # Freeze parameters of first layers 
-        children = iter(list(network.children()))
-        child = next(children)
-        for i in range(fz_depth):
-            for param in child[i].parameters():
+        # Freeze first fz_depth parameters
+        fz_count = 0
+        for nparam, param in network.named_parameters():
+            if fz_count < fz_depth:
+                print("Freezing parameter %s" % nparam)
                 param.requires_grad = False
-            if i+1 == len(child): # Move to following block
-                child = next(children)
+                fz_count += 1
+            else:
+                break
 
         # Feature layers
         child = list(network.children())[0]
@@ -326,7 +299,7 @@ class AlexNet(nn.Module):
         child = list(network.children())[1]
         self.fc1 = nn.Sequential(*list(child)[0:3])
         self.fc2 = nn.Sequential(*list(child)[3:6])
-        self.fc3 = nn.Sequential(nn.Linear(4096, n_classes), nn.Softmax(dim=1))
+        self.fc3 = nn.Linear(4096, n_classes)
 
     def forward(self,x):
         x = self.conv1(x)
@@ -339,6 +312,42 @@ class AlexNet(nn.Module):
         x = self.fc1(x)
         x = self.fc2(x)
         x = self.fc3(x)
+        return x
+
+class ResNet18(nn.Module):
+    def __init__(self, n_classes, fz_depth):
+        super(ResNet18,self).__init__()
+        network = torchvision.models.resnet18(pretrained=True)
+
+        # Freeze first fz_depth parameters
+        fz_count = 0
+        for nparam, param in network.named_parameters():
+            if fz_count < fz_depth:
+                print("Freezing parameter %s" % nparam)
+                param.requires_grad = False
+                fz_count += 1
+            else:
+                break
+
+        # First convolutional layer
+        self.conv1 = nn.Sequential(*list(network.children())[0:4])
+        self.basicblock1 = list(network.children())[5]
+        self.basicblock2 = list(network.children())[6]
+        self.basicblock3 = list(network.children())[7]
+        self.avgpool = list(network.children())[8]
+        
+        # Classifying layers
+        self.fc1 = nn.Linear(512, n_classes)
+
+    def forward(self,x):
+        x = self.conv1(x)
+        x = self.basicblock1(x)
+        x = self.basicblock2(x)
+        x = self.basicblock3(x)
+        x = self.avgpool(x)
+        
+        x = x.view(x.size(0), -1)
+        x = self.fc1(x)
         return x
 
 #class AlexNet(nn.Module):
