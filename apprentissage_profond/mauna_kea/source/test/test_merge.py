@@ -20,7 +20,7 @@ opt = parser.parse_args()
 # ======================= MERGE PREDICTIONS ======================== # 
 df_merge = pd.read_csv('./data/test_data_order.csv', header='infer')
 
-for model_type, model_name in zip(opt.model_type, opt.model_name):
+for model_type in opt.model_type:
     subs = os.listdir("submissions/%s" % model_type)
     for sub in subs:
         df = pd.read_csv("submissions/%s/%s" % (model_type, sub), header='infer')
