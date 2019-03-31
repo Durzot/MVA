@@ -24,7 +24,7 @@ for model_type in opt.model_type:
     subs = os.listdir("submissions/%s" % model_type)
     for sub in subs:
         df = pd.read_csv("submissions/%s/%s" % (model_type, sub), header='infer')
-        df_merge.loc[:, 'pred_%d' % i] = df.class_number.values
+        df_merge.loc[:, 'pred_%s' % sub] = df.class_number.values
 
 mask = [x for x in df_merge.columns if 'pred' in x]
 df_merge.loc[:, 'class_number'] = df_merge.loc[:, mask].mode(axis=1).values[:, 0]
