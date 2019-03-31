@@ -39,6 +39,30 @@ import numpy as np
 #        x= self.softmax(self.fc1(x))
 #        return x
 
+class MaunaNet2(nn.Module):
+    def __init__(self, n_classes):
+        super(MaunaNet3, self).__init__()
+        self.n_classes = n_classes
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, stride=2, padding=1)      # (64, 110, 110)
+        self.bn1 = nn.BatchNorm2d(64)
+        self.pool1 = nn.MaxPool2d(kernel_size=2)                                                        # (64, 55, 55)
+        self.conv2 = nn.Conv2d(in_channels=64, out_channels=256, kernel_size=3, stride=2, padding=1)    # (256, 28, 28)
+        self.bn1 = nn.BatchNorm2d(256)
+        self.pool2 = nn.MaxPool2d(kernel_size=2)                                                        # (256, 14, 14)
+        
+        self.avgpool = nn.AvgPool2d(14)                                                                 # (256, 1, 1)
+        self.fc = nn.Linear(256, n_classes)
+
+    def forward(self, x):
+        # input is (bs, 3, 224, 224)
+        x = self.pool1(F.relu(self.bn1(self.conv1(x))))
+        x = self.pool2(F.relu(self.bn2(self.conv2(x))))
+        
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = self.fc(x)
+        return x
+
 class MaunaNet3(nn.Module):
     def __init__(self, n_classes):
         super(MaunaNet3, self).__init__()
@@ -67,8 +91,7 @@ class MaunaNet3(nn.Module):
     
         x = x.view(x.size(0), -1)
         x = self.classifier(x)
-        return self.softmax(x)
-
+        return x
 
 class BenchMark(nn.Module):
     def __init__(self, n_classes):
@@ -94,7 +117,6 @@ class BenchMark(nn.Module):
         x = self.pool3(self.drop3(F.relu(self.conv3(x))))
     
         x = x.view(x.size(0), -1)
-        x = self.softmax(self.fc1(x))
         return x
 
 class BenchMarkBn(nn.Module):
@@ -345,7 +367,6 @@ class ResNet18(nn.Module):
         x = self.basicblock1(x)
         x = self.basicblock2(x)
         x = self.basicblock3(x)
-        x = self.basicblock4(x)
         x = self.avgpool(x)
         
         x = x.view(x.size(0), -1)
