@@ -41,13 +41,13 @@ import numpy as np
 
 class MaunaNet2(nn.Module):
     def __init__(self, n_classes):
-        super(MaunaNet3, self).__init__()
+        super(MaunaNet2, self).__init__()
         self.n_classes = n_classes
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, stride=2, padding=1)      # (64, 110, 110)
         self.bn1 = nn.BatchNorm2d(64)
         self.pool1 = nn.MaxPool2d(kernel_size=2)                                                        # (64, 55, 55)
         self.conv2 = nn.Conv2d(in_channels=64, out_channels=256, kernel_size=3, stride=2, padding=1)    # (256, 28, 28)
-        self.bn1 = nn.BatchNorm2d(256)
+        self.bn2 = nn.BatchNorm2d(256)
         self.pool2 = nn.MaxPool2d(kernel_size=2)                                                        # (256, 14, 14)
         
         self.avgpool = nn.AvgPool2d(14)                                                                 # (256, 1, 1)
@@ -67,30 +67,28 @@ class MaunaNet3(nn.Module):
     def __init__(self, n_classes):
         super(MaunaNet3, self).__init__()
         self.n_classes = n_classes
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=3, kernel_size=5, stride=2, padding=1)       # (3, 197, 197)
-        self.pool1 = nn.MaxPool2d(kernel_size=2)                                                        # (3, 98, 98)
-        self.conv2 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, stride=2, padding=1)      # (16, 48, 48)
-        self.pool2 = nn.MaxPool2d(kernel_size=2)                                                        # (16, 24, 24)
-        self.conv3 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=2, padding=1)     # (32, 12, 12)
-        self.pool3 = nn.MaxPool2d(kernel_size=2)                                                        # (32, 6, 6)
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, stride=2, padding=1)      # (64, 110, 110)
+        self.bn1 = nn.BatchNorm2d(64)                                                                   
+        self.pool1 = nn.MaxPool2d(kernel_size=2)                                                        # (64, 55, 55)
+        self.conv2 = nn.Conv2d(in_channels=64, out_channels=256, kernel_size=3, stride=2, padding=1)    # (256, 28, 28)
+        self.bn2 = nn.BatchNorm2d(256)                                                                   
+        self.pool2 = nn.MaxPool2d(kernel_size=2)                                                        # (256, 14, 14)
+        self.conv3 = nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=2, padding=1)   # (512, 7, 7)
+        self.bn3 = nn.BatchNorm2d(512)                                                                   
+        self.pool3 = nn.MaxPool2d(kernel_size=2)                                                        # (512, 4, 4)
 
-        self.classifier = nn.Sequential(
-            nn.Linear(32 * 6 * 6, 392),
-            nn.ReLU(inplace=True),
-            nn.Linear(392, 64),
-            nn.ReLU(inplace=True),
-            nn.Linear(64, n_classes),
-        )
-        self.softmax = nn.Softmax(dim=1)
+        self.avgpool = nn.AvgPool2d(4)                                                                  # (512, 1, 1)
+        self.fc = nn.Linear(512, n_classes)
 
     def forward(self, x):
-        # input is (bs, 1, 395, 395)
-        x = self.pool1(F.relu(self.conv1(x)))
-        x = self.pool2(F.relu(self.conv2(x)))
-        x = self.pool3(F.relu(self.conv3(x)))
-    
+        # input is (bs, 3, 224, 224)
+        x = self.pool1(F.relu(self.bn1(self.conv1(x))))
+        x = self.pool2(F.relu(self.bn2(self.conv2(x))))
+        x = self.pool3(F.relu(self.bn3(self.conv3(x))))
+        
+        x = self.avgpool(x)
         x = x.view(x.size(0), -1)
-        x = self.classifier(x)
+        x = self.fc(x)
         return x
 
 class BenchMark(nn.Module):

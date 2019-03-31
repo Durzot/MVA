@@ -39,7 +39,8 @@ parser.add_argument('--model', type=str, default=None,  help='optional reload mo
 parser.add_argument('--criterion', type=str, default='cross_entropy',  help='name of the criterion to use')
 parser.add_argument('--optimizer', type=str, default='sgd',  help='name of the optimizer to use')
 parser.add_argument('--lr', type=float, default=1e-2,  help='learning rate')
-parser.add_argument('--lr_decay', type=float, default=2,  help='decay factor in learning rate')
+parser.add_argument('--lr_decay_fact', type=float, default=2,  help='decay factor in learning rate')
+parser.add_argument('--lr_decay_freq', type=int, default=20,  help='decay frequency (in epochs) in learning rate')
 parser.add_argument('--momentum', type=float, default=0,  help='momentum (only SGD)')
 parser.add_argument('--cuda', type=int, default=0, help='set to 1 to use cuda')
 parser.add_argument('--random_state', type=int, default=0, help='random state for the split of data')
@@ -106,7 +107,7 @@ log_train_file = "./log/%s/logs_train_%s_%s.csv" % (opt.model_type, opt.model_na
 log_test_file = "./log/%s/logs_test_%s_%s.csv" % (opt.model_type, opt.model_name, opt.optimizer)
 
 if not os.path.exists(log_train_file): 
-    df_logs_train = pd.DataFrame(columns=['model', 'epoch', 'n_epoch', 'date', 'loss', 'acc', 'lr', 'optim', 'crit',
+    df_logs_train = pd.DataFrame(columns=['model', 'random_state', 'epoch', 'n_epoch', 'date', 'loss', 'acc', 'lr', 'optim', 'crit',
                                           'pred_0_0', 'pred_0_1', 'pred_0_2', 'pred_0_3',
                                           'pred_1_0', 'pred_1_1', 'pred_1_2', 'pred_1_3', 
                                           'pred_2_0', 'pred_2_1', 'pred_2_2', 'pred_2_3', 
@@ -115,7 +116,7 @@ else:
     df_logs_train = pd.read_csv(log_train_file, header='infer')
 
 if not os.path.exists(log_test_file):
-    df_logs_test = pd.DataFrame(columns=['model', 'epoch', 'n_epoch', 'date', 'loss', 'acc', 'lr', 'optim', 'crit',
+    df_logs_test = pd.DataFrame(columns=['model', 'random_state', 'epoch', 'n_epoch', 'date', 'loss', 'acc', 'lr', 'optim', 'crit',
                                          'pred_0_0', 'pred_0_1', 'pred_0_2', 'pred_0_3',
                                          'pred_1_0', 'pred_1_1', 'pred_1_2', 'pred_1_3', 
                                          'pred_2_0', 'pred_2_1', 'pred_2_2', 'pred_2_3', 
@@ -135,8 +136,8 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
     loss_train = 0
 
     # LEARNING RATE SCHEDULE
-    if (epoch+1) % 10 == 0:
-        opt.lr /= opt.lr_decay
+    if (epoch+1) % opt.lr_decay_freq == 0:
+        opt.lr /= opt.lr_decay_freq
         optimizer = get_optimizer(opt.optimizer, opt.lr, opt.momentum)
 
     for batch, (fn, label, data) in enumerate(loader_train):
@@ -172,6 +173,7 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
             log.write('cat %d: %s and %s' % (i, value_meter_train.sum[i], [float("{0:0.4f}".format(f)) for f in value_meter_train.avg[i]]) + '\n')
 
     row_train = {'model': opt.model_name, 
+                 'random_state': opt.random_state,
                  'epoch': epoch+1, 
                  'n_epoch': opt.n_epoch, 
                  'date': get_time(), 
@@ -223,6 +225,7 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
             log.write('cat %d: %s and %s' % (i, value_meter_test.sum[i], [float("{0:0.4f}".format(f)) for f in value_meter_test.avg[i]]) + '\n')
 
     row_test = {'model': opt.model_name, 
+                'random_state': opt.random_state,
                 'epoch': epoch+1, 
                 'n_epoch': opt.n_epoch, 
                 'date': get_time(), 
