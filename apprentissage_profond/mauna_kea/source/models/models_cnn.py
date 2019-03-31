@@ -331,9 +331,10 @@ class ResNet18(nn.Module):
 
         # First convolutional layer
         self.conv1 = nn.Sequential(*list(network.children())[0:4])
-        self.basicblock1 = list(network.children())[5]
-        self.basicblock2 = list(network.children())[6]
-        self.basicblock3 = list(network.children())[7]
+        self.basicblock1 = list(network.children())[4]
+        self.basicblock2 = list(network.children())[5]
+        self.basicblock3 = list(network.children())[6]
+        self.basicblock4 = list(network.children())[7]
         self.avgpool = list(network.children())[8]
         
         # Classifying layers
@@ -344,6 +345,7 @@ class ResNet18(nn.Module):
         x = self.basicblock1(x)
         x = self.basicblock2(x)
         x = self.basicblock3(x)
+        x = self.basicblock4(x)
         x = self.avgpool(x)
         
         x = x.view(x.size(0), -1)
