@@ -65,36 +65,6 @@ if opt.model is not None:
     network.load_state_dict(torch.load(opt.model))
     print("Weights from %s loaded" % opt.model)
 
-#elif opt.model_name == "densenet121":
-#    # Let weights of first 2 layers unchanged
-#    for param in list(model.children())[0][0].parameters():
-#        param.requires_grad = False
-#    for param in list(model.children())[0][1].parameters():
-#        param.requires_grad = False
-#
-#    # _Dense Block is composed of 6 dense layers
-#    # Let weights of first 3 layers unchanged
-#    for i in range(3):
-#        for param in list(model.children())[0][4][i].parameters():
-#            param.requires_grad = False
-#
-#elif opt.model_name == "inception_v3":
-#    # First 7 layers of inception_v3 are BasicConv2d and MaxPool2D
-#    # Next 4 are InceptionA layers
-#    for i in range(11):
-#        for param in list(model.children())[0][i].parameters():
-#            param.requires_grad = False
-#
-#elif opt.model_name == "se_resnet50":
-#    # CUDA memory is enough to update all parameters
-#    pass
-#
-#elif opt.model_name == "inceptionresnetv2":
-#    # First 15 layers, only update params of last one
-#    for i in range(14):
-#        for param in list(model.children())[0][i].parameters():
-#            param.requires_grad = False
-
 if opt.cuda:
     network.cuda()
 
@@ -129,7 +99,7 @@ if not os.path.exists(log_file):
         log.write(str(network) + '\n')
 
         for nparam, param in network.named_parameters():
-            if param.requires_grad = False
+            if param.requires_grad = False:
                 log.write("Param %s is not frozen\n" % nparam)
             else:
                 log.write("Param %s is not frozen\n" % nparam)
