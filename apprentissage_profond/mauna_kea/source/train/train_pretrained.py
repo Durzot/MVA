@@ -98,8 +98,11 @@ if not os.path.exists(log_file):
         log.write(str(opt) + '\n\n')
         log.write(str(network) + '\n')
 
+        fz_count = 0
         for nparam, param in network.named_parameters():
-            if param.requires_grad == False:
+            if fz_count < opt.fz_depth:
+                param.requires_grad = False
+                fz_count += 1
                 log.write("Param %s is frozen\n" % nparam)
             else:
                 log.write("Param %s is not frozen\n" % nparam)
