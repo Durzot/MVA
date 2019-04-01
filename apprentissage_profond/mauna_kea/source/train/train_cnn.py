@@ -245,4 +245,4 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
     print("Saving net")
     torch.save(network.state_dict(), os.path.join(save_path, '%s_%s.pth' % (opt.model_name, opt.optimizer)))
 
-
+#python source/train/train_cnn.py --img_size 224 --rgb 1 --n_epoch 100 --model_type cnn_Mauna_mom --optimizer sgd --lr 0.005 --lr_decay_fact 2 --lr_decay_freq 20 --momentum 0.9 --model_name MaunaNet4 --random_state 412 --cuda 1

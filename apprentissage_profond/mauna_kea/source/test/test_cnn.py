@@ -24,21 +24,25 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--batch_size', type=int, default=64, help='input batch size')
 parser.add_argument('--workers', type=int, default=1, help='number of data loading workers')
 parser.add_argument('--data_aug', type=int, default=0 , help='1 for data augmentation')
+parser.add_argument('--img_size', type=int, default=224 , help='size of input images to model')
+parser.add_argument('--rgb', type=int, default=1, help='1 for 3 channel input, 0 for 1 channel input')
 parser.add_argument('--n_classes', type=int, default=4, help='number of classes')
-parser.add_argument('--model_path', type=str, default="trained_models/cnn_2/MaunaNet4_40.pth", help='dir where model is saved')
 parser.add_argument('--model_type', type=str, default="cnn_2", help='model type')
 parser.add_argument('--model_name', type=str, default="MaunaNet4",  help='optional reload model path')
+parser.add_argument('--optimizer', type=str, default="sgd",  help='optimizer used to train the model')
 parser.add_argument('--cuda', type=int, default=0, help='set to 1 to use cuda')
 opt = parser.parse_args()
 
-if not os.path.exists(opt.model_path):
-    raise ValueError("There is no model %s" % opt.model_path)
+model_path = 'trained_models/%s/%s_%s.pth' % (opt.model_type, opt.model_name, opt.optimizer)
+
+if not os.path.exists(model_path):
+    raise ValueError("There is no model %s" % model_path)
 
 # ========================== TEST DATA ========================== #
-dataset_test_1 = MaunaKeaTest(root_img="./data/TestSetImagesDir/part_1", data_aug=opt.data_aug)
+dataset_test_1 = MaunaKeaTest(root_img="./data/TestSetImagesDir/part_1", data_aug=opt.data_aug, rgb=opt.rgb, img_size=opt.img_size)
 loader_test_1 = torch.utils.data.DataLoader(dataset_test_1, batch_size=opt.batch_size, shuffle=False, num_workers=opt.workers)
 
-dataset_test_2 = MaunaKeaTest(root_img="./data/TestSetImagesDir/part_2", data_aug=opt.data_aug)
+dataset_test_2 = MaunaKeaTest(root_img="./data/TestSetImagesDir/part_2", data_aug=opt.data_aug, rgb=opt.rgb, img_size=opt.img_size)
 loader_test_2 = torch.utils.data.DataLoader(dataset_test_2, batch_size=opt.batch_size, shuffle=False, num_workers=opt.workers)
 
 print('test set 1 size %d' % len(dataset_test_1))
@@ -48,15 +52,15 @@ print('test set 2 size %d' % len(dataset_test_2))
 network = eval("%s(n_classes=opt.n_classes)" % opt.model_name)
 
 if opt.cuda:
-    network.load_state_dict(torch.load(opt.model_path))
+    network.load_state_dict(torch.load(model_path))  
     network.cuda()
 else:
-    network.load_state_dict(torch.load(opt.model_path, map_location='cpu'))
+    network.load_state_dict(torch.load(model_path, map_location='cpu'))
 
-print("Weights from %s loaded" % opt.model_path)
+print("Weights from %s loaded" % model_path)
 
 df_test = pd.DataFrame(columns=['image_filename', 'class_number'])
-test_file = "./submissions/%s/sub_%s.csv" % (opt.model_type, opt.model_name)
+test_file = "./submissions/%s/sub_%s_%s.csv" % (opt.model_type, opt.model_name, opt.optimizer)
 
 if not os.path.exists("./submissions/%s" % opt.model_type):
     os.mkdir("./submissions/%s" % opt.model_type)
