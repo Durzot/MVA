@@ -137,7 +137,7 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
 
     # LEARNING RATE SCHEDULE
     if (epoch+1) % opt.lr_decay_freq == 0:
-        opt.lr /= opt.lr_decay_freq
+        opt.lr /= opt.lr_decay_fact
         optimizer = get_optimizer(opt.optimizer, opt.lr, opt.momentum)
 
     for batch, (fn, label, data) in enumerate(loader_train):
@@ -246,3 +246,5 @@ for epoch in range(opt.st_epoch, opt.n_epoch):
     torch.save(network.state_dict(), os.path.join(save_path, '%s_%s.pth' % (opt.model_name, opt.optimizer)))
 
 #python source/train/train_cnn.py --img_size 224 --rgb 1 --n_epoch 100 --model_type cnn_Mauna_mom --optimizer sgd --lr 0.005 --lr_decay_fact 2 --lr_decay_freq 20 --momentum 0.9 --model_name MaunaNet4 --random_state 412 --cuda 1
+
+#python source/train/train_cnn.py --img_size 224 --rgb 1 --n_epoch 140 --st_epoch 100 --model_type cnn_Mauna_ret --optimizer sgd --lr 0.00005 --lr_decay_fact 2 --lr_decay_freq 20 --momentum 0 --model_name MaunaNet4 --model trained_models/cnn_Mauna_ret/MaunaNet4_sgd.pth --random_state 123 --cuda 1

@@ -252,7 +252,7 @@ class MaunaKeaTest(data.Dataset):
 
 class MaunaTexturalFeatures(object):
     def __init__(self, root_img="./data/TrainingSetImagesDir", label_file="./data/TrainingSet_20aimVO.csv", 
-                 feature_mean=True, feature_range=True, feature_std=True, random_state=0):
+                 feature_mean=True, feature_range=True, feature_std=True):
         self.root_img = root_img
         self.label_img = pd.read_csv(label_file)
         self.feature_mean = feature_mean
