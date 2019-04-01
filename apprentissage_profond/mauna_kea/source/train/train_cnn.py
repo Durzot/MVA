@@ -29,7 +29,7 @@ parser.add_argument('--batch_size', type=int, default=64, help='input batch size
 parser.add_argument('--workers', type=int, default=1, help='number of data loading workers')
 parser.add_argument('--data_aug', type=int, default=0 , help='1 for data augmentation')
 parser.add_argument('--img_size', type=int, default=224 , help='size of input images to model')
-parser.add_argument('--rgb', type=int, default=0, help='1 for 3 channel input, 0 for 1 channel input')
+parser.add_argument('--rgb', type=int, default=1, help='1 for 3 channel input, 0 for 1 channel input')
 parser.add_argument('--n_classes', type=int, default=4, help='number of classes')
 parser.add_argument('--n_epoch', type=int, default=100, help='number of epochs to train for')
 parser.add_argument('--st_epoch', type=int, default=0, help='if continuing training, epoch from which to continue')
