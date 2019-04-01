@@ -84,6 +84,11 @@ for loader_test in [loader_test_1, loader_test_2]:
 
 dt = time.time()-st_time
 print("%d min %d sec" % (dt//60, dt%60))
+
+df_test_order = pd.read_csv('./data/test_data_order.csv', header='infer')
+df_test = df_test.set_index('image_filename')
+df_test = df_test.reindex(index=df_test_order['image_filename'])
+df_test = df_test.reset_index()
     
 df_test.to_csv(test_file, header=True, index=False)
 
