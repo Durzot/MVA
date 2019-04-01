@@ -29,6 +29,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--batch_size', type=int, default=64, help='input batch size')
 parser.add_argument('--workers', type=int, default=1, help='number of data loading workers')
 parser.add_argument('--data_aug', type=int, default=0 , help='1 for data augmentation')
+parser.add_argument('--crop_size', type=int, default=224 , help='crop size if data augmentation is 1')
 parser.add_argument('--img_size', type=int, default=224 , help='size of input images to model')
 parser.add_argument('--rgb', type=int, default=1, help='1 for 3 channel input, 0 for 1 channel input')
 parser.add_argument('--n_classes', type=int, default=4, help='number of classes')
@@ -48,10 +49,10 @@ parser.add_argument('--random_state', type=int, default=0, help='random state fo
 opt = parser.parse_args()
 
 # ========================== TRAINING AND TEST DATA ========================== #
-dataset_train = MaunaKea(train=True, data_aug=opt.data_aug, random_state=opt.random_state, rgb=opt.rgb, img_size=opt.img_size)
+dataset_train = MaunaKea(train=True, data_aug=opt.data_aug, crop_size=opt.crop_size, random_state=opt.random_state, rgb=opt.rgb, img_size=opt.img_size)
 loader_train = torch.utils.data.DataLoader(dataset_train, batch_size=opt.batch_size, shuffle=True, num_workers=opt.workers)
 
-dataset_test = MaunaKea(train=False, data_aug=opt.data_aug, random_state=opt.random_state, rgb=opt.rgb, img_size=opt.img_size)
+dataset_test = MaunaKea(train=False, data_aug=opt.data_aug, crop_size=opt.crop_size, random_state=opt.random_state, rgb=opt.rgb, img_size=opt.img_size)
 loader_test = torch.utils.data.DataLoader(dataset_test, batch_size=opt.batch_size, shuffle=False, num_workers=opt.workers)
 
 print('training set size %d' % len(dataset_train))
