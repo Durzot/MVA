@@ -276,6 +276,7 @@ class MaunaTexturalFeatures(object):
         for _, row in tqdm(self.label_img.iterrows()):
            data_row = {}
            data_row['patient'] = row['patient']
+           data_row['image_filename'] = row['image_filename']
            data_row['label'] = row['class_number']
 
            path = os.path.join(self.root_img, row['image_filename'])
@@ -291,12 +292,13 @@ class MaunaTexturalFeatures(object):
         distances = [1]
         angles = [0, np.pi*35/180, np.pi*90/180, np.pi*135/180]
         P = greycomatrix(img, distances, angles)
-
+        
         f = {}
         (num_level, num_level, num_dist, num_angle) = P.shape
-
-        # normalize each GLCM
+        
         P = P.astype(np.float64)
+        
+        # normalize each GLCM
         glcm_sums = np.apply_over_axes(np.sum, P, axes=(0, 1))
         glcm_sums[glcm_sums == 0] = 1
         P /= glcm_sums
@@ -306,7 +308,15 @@ class MaunaTexturalFeatures(object):
         #######################
         results = np.apply_over_axes(np.sum, (P ** 2), axes=(0, 1))[0, 0]  
         f['ams'] = results
-
+        
+        #######################
+        # Entropy
+        #######################
+        eps = 1e-15
+        results = np.zeros((num_dist, num_angle), dtype=np.float64)
+        results = np.apply_over_axes(np.sum, -(np.log(P+eps)*P), axes=(0, 1))[0, 0]
+        f['ent'] = results
+        
         #######################
         # Contrast
         #######################
@@ -315,7 +325,7 @@ class MaunaTexturalFeatures(object):
         weights = weights.reshape((num_level, num_level, 1, 1))
         results = np.apply_over_axes(np.sum, (P * weights), axes=(0, 1))[0, 0]
         f['contrast'] = results
-
+        
         #######################
         # Correlation
         #######################
@@ -324,138 +334,129 @@ class MaunaTexturalFeatures(object):
         J = np.array(range(num_level)).reshape((1, num_level, 1, 1))
         diff_i = I - np.apply_over_axes(np.sum, (I * P), axes=(0, 1))[0, 0]
         diff_j = J - np.apply_over_axes(np.sum, (J * P), axes=(0, 1))[0, 0]
-
-        std_i = np.sqrt(np.apply_over_axes(np.sum, (P * (diff_i) ** 2),
-                                           axes=(0, 1))[0, 0])
-        std_j = np.sqrt(np.apply_over_axes(np.sum, (P * (diff_j) ** 2),
-                                           axes=(0, 1))[0, 0])
-        cov = np.apply_over_axes(np.sum, (P * (diff_i * diff_j)),
-                                 axes=(0, 1))[0, 0]
-
+        
+        std_i = np.sqrt(np.apply_over_axes(np.sum, (P * (diff_i) ** 2), axes=(0, 1))[0, 0])
+        std_j = np.sqrt(np.apply_over_axes(np.sum, (P * (diff_j) ** 2), axes=(0, 1))[0, 0])
+        cov = np.apply_over_axes(np.sum, (P * (diff_i * diff_j)), axes=(0, 1))[0, 0]
+        
         # handle the special case of standard deviations near zero
         mask_0 = std_i < 1e-15
         mask_0[std_j < 1e-15] = True
         results[mask_0] = 1
-
+        
         # handle the standard case
         mask_1 = mask_0 == False
         results[mask_1] = cov[mask_1] / (std_i[mask_1] * std_j[mask_1])
         f['correlation'] = results
-
-        #######################
-        # Sum of squares
-        #######################
-        results = np.zeros((num_dist, num_angle), dtype=np.float64)
-        I = np.array(range(num_level)).reshape((num_level, 1))
-        I = np.repeat(I, num_level, axis=1).reshape((num_level, num_level, 1, 1))
-        diff_i = np.square(I - np.apply_over_axes(np.sum, P, axes=(0, 1))[0, 0])
-        results = np.apply_over_axes(np.sum, (diff_i * P), axes=(0, 1))[0, 0]
-        f['sum_sq'] = results
-
-        #######################
-        # Inverse difference moment
-        #######################
-        I, J = np.ogrid[0:num_level, 0:num_level]
-        weights = 1. / (1. + (I - J) ** 2)
-        weights = weights.reshape((num_level, num_level, 1, 1))
-        results = np.apply_over_axes(np.sum, (P * weights), axes=(0, 1))[0, 0]
-        f['inv_diff_mom'] = results
-
-        P_ij = np.zeros(((2*num_level-1), num_dist, num_angle))
-        P_diff_ij = np.zeros((num_level, num_dist, num_angle))
-        for a in range(num_angle):
-            for d in range(num_dist):
-                for k in range(num_level):
-                    for i in range(max(k-num_level+1, 0), min(k, num_level)):
-                        P_ij[k, d, a] += P[i, k-i, d, a]
-                    for i in range(num_level):
-                        if i-k >= 0:
-                            P_diff_ij[k, d, a] += P[i, i-k, d, a]
-                        if i+k < num_level:
-                            P_diff_ij[k, d, a] += P[i, i+k, d, a]
-                for k in range(num_level, 2*num_level-1):
-                    for i in range(max(k-num_level+1, 0), min(k, num_level)):
-                        P_ij[k, d, a] += P[i, k-i, d, a]
-
         
-        #######################
-        # Sum average
-        #######################
-        results = np.zeros((num_dist, num_angle), dtype=np.float64)
-        I = np.array(range(2*num_level-1)).reshape((2*num_level-1, 1, 1))
-        results = np.apply_over_axes(np.sum, (I*P_ij), axes=(0))[0]
-        f['sum_avg'] = results
-
-        #######################
-        # Sum variance
-        #######################
-        results = np.zeros((num_dist, num_angle), dtype=np.float64)
-        I = np.square(np.array(range(2*num_level-1)).reshape((2*num_level-1, 1, 1)) - f['sum_avg'])
-        results = np.apply_over_axes(np.sum, (I*P_ij), axes=(0))[0]
-        f['sum_var'] = results
-
-        #######################
-        # Sum entropy
-        #######################
-        eps = 1e-15
-        results = np.zeros((num_dist, num_angle), dtype=np.float64)
-        log_P_ij = np.log(P_ij + eps)
-        results = np.apply_over_axes(np.sum, -(log_P_ij*P_ij), axes=(0))[0]
-        f['sum_ent'] = results
-
-        #######################
-        # Entropy
-        #######################
-        results = np.zeros((num_dist, num_angle), dtype=np.float64)
-        results = np.apply_over_axes(np.sum, -(np.log(P+eps)*P), axes=(0, 1))[0, 0]
-        f['ent'] = results
-        
-        #######################
-        # Difference Variance
-        #######################
-        results = np.zeros((num_dist, num_angle), dtype=np.float64)
-        I = np.array(range(num_level)).reshape((num_level, 1, 1))
-        diff_avg = np.apply_over_axes(np.sum, (I*P_diff_ij), axes=(0))[0]
-
-        I = np.square(np.array(range(num_level)).reshape((num_level, 1, 1)) - diff_avg)
-        results = np.apply_over_axes(np.sum, (I*P_diff_ij), axes=(0))[0]
-        f['diff_var'] = results
-
-        #######################
-        # Diff entropy
-        #######################
-        eps = 1e-15
-        results = np.zeros((num_dist, num_angle), dtype=np.float64)
-        log_P_diff_ij = np.log(P_diff_ij + eps)
-        results = np.apply_over_axes(np.sum, -(log_P_diff_ij*P_diff_ij), axes=(0))[0]
-        f['diff_ent'] = results
-
-        P_i = np.apply_over_axes(np.sum, P, axes=(1))
-        P_j = np.apply_over_axes(np.sum, P, axes=(0))
-        P_iP_j = np.zeros((num_level, num_level, num_dist, num_angle))
-
-        for a in range(num_angle):
-            for d in range(num_dist):
-                P_iP_j[:, :, d, a] = np.dot(P_i[:, :, d, a], P_j[:, :, d, a])
-                
-        HX = np.apply_over_axes(np.sum, -(np.log(P_i+eps)*P_i), axes=(0,1))[0, 0]
-        HY = np.apply_over_axes(np.sum, -(np.log(P_j+eps)*P_j), axes=(0,1))[0, 0]
-        HXY = f['ent']
-
-        HXY1 = np.apply_over_axes(np.sum, -(np.log(P_iP_j+eps)*P), axes=(0, 1))[0, 0]
-        HXY2 = np.apply_over_axes(np.sum, -(np.log(P_iP_j+eps)*P_iP_j), axes=(0, 1))[0, 0]
-
-        f['m1_corr'] = (HXY - HXY1)/np.fmax(HX, HY)
-        f['m2_corr'] = np.sqrt(1-np.exp(-2.*(HXY2-HXY)))
-
+        ########################
+        ## Sum of squares
+        ########################
+        #results = np.zeros((num_dist, num_angle), dtype=np.float64)
+        #I = np.array(range(num_level)).reshape((num_level, 1))
+        #I = np.repeat(I, num_level, axis=1).reshape((num_level, num_level, 1, 1))
+        #diff_i = np.square(I - np.apply_over_axes(np.sum, P, axes=(0, 1))[0, 0])
+        #results = np.apply_over_axes(np.sum, (diff_i * P), axes=(0, 1))[0, 0]
+        #f['sum_sq'] = results
+        #
+        ########################
+        ## Inverse difference moment
+        ########################
+        #I, J = np.ogrid[0:num_level, 0:num_level]
+        #weights = 1. / (1. + (I - J) ** 2)
+        #weights = weights.reshape((num_level, num_level, 1, 1))
+        #results = np.apply_over_axes(np.sum, (P * weights), axes=(0, 1))[0, 0]
+        #f['inv_diff_mom'] = results
+        #
+        #P_ij = np.zeros(((2*num_level-1), num_dist, num_angle))
+        #P_diff_ij = np.zeros((num_level, num_dist, num_angle))
+        #for a in range(num_angle):
+        #    for d in range(num_dist):
+        #        for k in range(num_level):
+        #            for i in range(max(k-num_level+1, 0), min(k, num_level)):
+        #                P_ij[k, d, a] += P[i, k-i, d, a]
+        #            for i in range(num_level):
+        #                if i-k >= 0:
+        #                    P_diff_ij[k, d, a] += P[i, i-k, d, a]
+        #                if i+k < num_level:
+        #                    P_diff_ij[k, d, a] += P[i, i+k, d, a]
+        #        for k in range(num_level, 2*num_level-1):
+        #            for i in range(max(k-num_level+1, 0), min(k, num_level)):
+        #                P_ij[k, d, a] += P[i, k-i, d, a]
+        #
+        #
+        ########################
+        ## Sum average
+        ########################
+        #results = np.zeros((num_dist, num_angle), dtype=np.float64)
+        #I = np.array(range(2*num_level-1)).reshape((2*num_level-1, 1, 1))
+        #results = np.apply_over_axes(np.sum, (I*P_ij), axes=(0))[0]
+        #f['sum_avg'] = results
+        #
+        ########################
+        ## Sum variance
+        ########################
+        #results = np.zeros((num_dist, num_angle), dtype=np.float64)
+        #I = np.square(np.array(range(2*num_level-1)).reshape((2*num_level-1, 1, 1)) - f['sum_avg'])
+        #results = np.apply_over_axes(np.sum, (I*P_ij), axes=(0))[0]
+        #f['sum_var'] = results
+        #
+        ########################
+        ## Sum entropy
+        ########################
+        #eps = 1e-15
+        #results = np.zeros((num_dist, num_angle), dtype=np.float64)
+        #log_P_ij = np.log(P_ij + eps)
+        #results = np.apply_over_axes(np.sum, -(log_P_ij*P_ij), axes=(0))[0]
+        #f['sum_ent'] = results
+        #
+        #
+        ########################
+        ## Difference Variance
+        ########################
+        #results = np.zeros((num_dist, num_angle), dtype=np.float64)
+        #I = np.array(range(num_level)).reshape((num_level, 1, 1))
+        #diff_avg = np.apply_over_axes(np.sum, (I*P_diff_ij), axes=(0))[0]
+        #
+        #I = np.square(np.array(range(num_level)).reshape((num_level, 1, 1)) - diff_avg)
+        #results = np.apply_over_axes(np.sum, (I*P_diff_ij), axes=(0))[0]
+        #f['diff_var'] = results
+        #
+        ########################
+        ## Diff entropy
+        ########################
+        #eps = 1e-15
+        #results = np.zeros((num_dist, num_angle), dtype=np.float64)
+        #log_P_diff_ij = np.log(P_diff_ij + eps)
+        #results = np.apply_over_axes(np.sum, -(log_P_diff_ij*P_diff_ij), axes=(0))[0]
+        #f['diff_ent'] = results
+        #
+        #P_i = np.apply_over_axes(np.sum, P, axes=(1))
+        #P_j = np.apply_over_axes(np.sum, P, axes=(0))
+        #P_iP_j = np.zeros((num_level, num_level, num_dist, num_angle))
+        #
+        #for a in range(num_angle):
+        #    for d in range(num_dist):
+        #        P_iP_j[:, :, d, a] = np.dot(P_i[:, :, d, a], P_j[:, :, d, a])
+        #        
+        #HX = np.apply_over_axes(np.sum, -(np.log(P_i+eps)*P_i), axes=(0,1))[0, 0]
+        #HY = np.apply_over_axes(np.sum, -(np.log(P_j+eps)*P_j), axes=(0,1))[0, 0]
+        #HXY = f['ent']
+        #
+        #HXY1 = np.apply_over_axes(np.sum, -(np.log(P_iP_j+eps)*P), axes=(0, 1))[0, 0]
+        #HXY2 = np.apply_over_axes(np.sum, -(np.log(P_iP_j+eps)*P_iP_j), axes=(0, 1))[0, 0]
+        #
+        #f['m1_corr'] = (HXY - HXY1)/np.fmax(HX, HY)
+        #f['m2_corr'] = np.sqrt(1-np.exp(-2.*(HXY2-HXY)))
+        #
         features = {}
-        for d in range(num_dist):
+        for i, dist in enumerate(distances):
             for k in f.keys():
                 if self.feature_mean:
-                    features['%s_%d_mean' % (k, d)] = f[k][d, :].mean()
+                    features['%s_%d_mean' % (k, dist)] = f[k][i, :].mean()
                 if self.feature_range:
-                    features['%s_%d_range' % (k, d)] = f[k][d, :].max() -  f[k][d, :].min() 
+                    features['%s_%d_range' % (k, dist)] = f[k][i, :].max() -  f[k][i, :].min() 
                 if self.feature_std:
-                    features['%s_%d_std' % (k, d)] = f[k][d, :].std()
+                    features['%s_%d_std' % (k, dist)] = f[k][i, :].std()
         return features
 
