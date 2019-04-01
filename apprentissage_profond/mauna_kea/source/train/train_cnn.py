@@ -19,6 +19,7 @@ sys.path.append("./source")
 from auxiliary.dataset import *
 from auxiliary.utils import *
 from models.models_cnn import *
+from models.models_cnmp import *
 
 def get_time():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M") 
