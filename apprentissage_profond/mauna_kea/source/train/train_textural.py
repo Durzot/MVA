@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Functions to train models on the train set
+Classifiers on merged high-level features (from CNN) and traditional texture and color features.
 Python 3 virtual environment 3.7_pytorch_sk
 
 @author: Yoann Pradat
@@ -13,187 +13,259 @@ import numpy as np
 import pandas as pd
 import time
 import datetime
+import warnings
+
+import torch
+sys.path.append("./source")
+from auxiliary.dataset import *
+from auxiliary.utils import *
+from models.models_cnn import *
 
 import matplotlib
 matplotlib.use('TkAgg')
 from matplotlib.colors import ListedColormap
 import matplotlib.pyplot as plt
 
-sys.path.append("./source")
-from auxiliary.dataset import *
-from auxiliary.utils import *
-
-from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA, KernelPCA
-
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV, KFold
-
-from sklearn.svm import SVC
 
 def get_time():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M") 
 
 # =========================== PARAMETERS =========================== # 
 parser = argparse.ArgumentParser()
-parser.add_argument('--data_path', type=str, default='./data/TransformedData/data_textural_train.csv', help='path data')
 parser.add_argument('--n_classes', type=int, default=4, help='number of classes')
-parser.add_argument('--model_type', type=str, default='svm_1',  help='type of model')
-parser.add_argument('--model_name', type=str, default='SVM',  help='name of the model for log')
+parser.add_argument('--model_type', type=str, default='cnn_Mauna_decay_20_20',  help='type of model')
+parser.add_argument('--model_name', type=str, default='MaunaNet2',  help='name of the model for log')
+parser.add_argument('--optimizer', type=str, default="sgd",  help='optimizer used to train the model')
 parser.add_argument('--n_splits', type=int, default=5, help='number of splits for cv of params')
-parser.add_argument('--test_size', type=float, default=0.2, help='size of held-out data')
-parser.add_argument('--random_state', type=int, default=0, help='random state for the split of data')
+parser.add_argument('--n_jobs', type=int, default=3, help='number of jobs for the gridsearch')
+parser.add_argument('--verbose', type=int, default=1, help='verbose for the gridsearch')
+parser.add_argument('--random_state', type=int, default=50, help='random state for the split of data')
 opt = parser.parse_args()
 
-# ========================== TRAINING DATA ========================== #
-if opt.data_path is not None:
-    data_textural = pd.read_csv(opt.data_path, header='infer')
-else:
-    dataset = MaunaTexturalFeatures(feature_mean=True, feature_std=True, feature_range=True)
-    data_textural =  dataset.get_data()
+data_path = './data/TransformedData/%s/%s_%s' % (opt.model_type, opt.model_name, opt.optimizer)
 
-X = data_textural.loc[:, [x for x in data_textural.columns if x not in ['patient', 'image_filename', 'label']]].values
-y = data_textural.loc[:, 'label'].astype(int).values
+if not os.path.exists(data_path):
+    raise ValueError("There is no path %s" % data_path)
 
-X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=opt.test_size, stratify=y,
-                                                  random_state=opt.random_state)
+# ========================== MERGE THE FEATURES =========================== #
+# High level features
+data_hl_feat_train = pd.read_csv(os.path.join(data_path, "data_hl_feat_train.csv"), header='infer')
+data_hl_feat_test = pd.read_csv(os.path.join(data_path, "data_hl_feat_test.csv"), header='infer')
 
-# Normalize the data
-sc = StandardScaler()
-X_train_std = sc.fit_transform(X_train)
-X_val_std = sc.transform(X_val)
+# Traditional features
+data_textural_train = pd.read_csv('./data/TransformedData/data_textural_train.csv', header='infer')
 
-# ============================ PLOT FEATURES DISTRIBUTION ============================ #
-feature_names = [x for x in data_textural.columns if x not in ['patient', 'image_filename', 'label']]
+data_merge_train = data_hl_feat_train.merge(data_textural_train, how='left', on=['image_filename', 'class_number'])
+data_merge_test = data_hl_feat_test.merge(data_textural_train, how='left', on=['image_filename', 'class_number'])
 
-colors = ['r','g','b','orange']
+# Train set
+info_cols =  ['image_filename', 'class_number', 'patient']
+text_cols = [x for x in data_merge_train.columns if 'hf_' not in x and x not in info_cols] 
+hl_cols = [x for x in data_merge_train.columns if 'hf_' in x] 
+merge_cols = [x for x in data_merge_train.columns if x not in info_cols]
 
-# DISTRIBUTION OF 6 FIRST FEATURES
-fig, ax = plt.subplots(nrows=2, ncols=3, figsize=(16, 9))
-ax = ax.flatten()
-for i in range(6):
-    fname = feature_names[i]
-    for l, c in zip(np.unique(y_train), colors):
-        ax[i].hist(X_train_std[y_train==l, i], bins=100, density=True, alpha=0.5, color=c, label="cat %d" % l)
-        ax[i].set_title("Variable %s" % fname, fontweight="bold", fontsize=15)
-        ax[i].legend(loc="best", fontsize=12)
-        ax[i].set_xlim([-5, 5])
-plt.suptitle("Distribution des variables de texture normalisées", fontsize=20, fontweight="bold")
-plt.savefig('graphs/textural/feat_distrib_1.png')
+X_text_train = data_merge_train.loc[:, text_cols].values
+X_hl_train = data_merge_train.loc[:, hl_cols].values
+X_merge_train = data_merge_train.loc[:, merge_cols].values
+y_train = data_merge_train.loc[:, 'class_number'].values
 
-# DISTRIBUTION OF 6 LAST FEATURES
-fig, ax = plt.subplots(nrows=2, ncols=3, figsize=(16, 9))
-ax = ax.flatten()
-for i in range(6):
-    fname = feature_names[i+6]
-    for l, c in zip(np.unique(y_train), colors):
-        ax[i].hist(X_train_std[y_train==l, i+6], bins=100, density=True, alpha=0.5, color=c, label="cat %d" % l)
-        ax[i].set_title("Variable %s" % fname, fontweight="bold", fontsize=15)
-        ax[i].legend(loc="best", fontsize=12)
-        ax[i].set_xlim([-5, 5])
-plt.suptitle("Distribution des variables de texture normalisées", fontsize=20, fontweight="bold")
-plt.savefig('graphs/textural/feat_distrib_2.png')
+# Test set (internal)
+X_text_test = data_merge_test.loc[:, text_cols].values
+X_hl_test = data_merge_test.loc[:, hl_cols].values
+X_merge_test = data_merge_test.loc[:, merge_cols].values
+y_test = data_merge_test.loc[:, 'class_number'].values
 
-# ============================ PCA ============================ #
-cov_mat = np.cov(X_train_std.T)
-eigen_vals, eigen_vecs = np.linalg.eig(cov_mat)
-print('\n Eigenvalues \n%s'%eigen_vals)
-
-tot = sum(eigen_vals)
-expl_var = [i/tot for i in sorted(eigen_vals,reverse=True)]
-cum_expl_var = np.cumsum(expl_var)
-
-fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(14,10))
-ax.bar(np.arange(1, X_train_std.shape[1]+1), expl_var,alpha=0.5,align='center',
-        label='var. expl. individuelle')
-ax.step(np.arange(1, X_train_std.shape[1]+1), cum_expl_var, where='mid', label='var. expl. cumulée')
-ax.set_xlabel('Indice composante principale', fontweight="bold", fontsize=20)
-ax.set_ylabel('Ratio de variance expliquée',  fontweight="bold", fontsize=20)
-ax.legend(loc='best', fontsize=15)
-plt.savefig('graphs/textural/pca_explained_var.png')
-
-# PROJECT
-pca = PCA(n_components=4)
-X_train_pca = pca.fit_transform(X_train_std)
-X_val_pca = pca.transform(X_val_std)
-
-# PLOT PROJECTION ON PC 1 AND 2
-fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(14,10))
-colors = ['r','g','b','orange']
-markers = ['+','x','o', '^']
-for l, c, m in zip(np.unique(y_train), colors,markers):
-    ax.scatter(X_train_pca[y_train==l,0],
-               X_train_pca[y_train==l,1],
-               color=c,marker=m, label="cat %d" % l)
-
-ax.set_xlabel('PC 1', fontweight="bold", fontsize=20)
-ax.set_ylabel('PC 2', fontweight="bold", fontsize=20)
-ax.legend(loc='best', fontsize=20)
-#ax.set_xlim([-10, 10])
-#ax.set_ylim([-10, 10])
-ax.set_title("Projection des variables de texture sur PC 1 et 2", fontweight="bold", fontsize=25)
-plt.savefig('graphs/textural/pca_12.png')
-
-# PLOT PROJECTION ON PC 3 AND 4
-fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(14,10))
-colors = ['r','g','b','orange']
-markers = ['+','x','o', '^']
-for l, c, m in zip(np.unique(y_train), colors,markers):
-    ax.scatter(X_train_pca[y_train==l,2],
-               X_train_pca[y_train==l,3],
-               color=c,marker=m,label="cat %d" % l)
-
-ax.set_xlabel('PC 3', fontweight="bold", fontsize=20)
-ax.set_ylabel('PC 4', fontweight="bold", fontsize=20)
-ax.legend(loc='best', fontsize=20)
-ax.set_title("Projection des variables de texture sur PC 1 et 2", fontweight="bold", fontsize=25)
-plt.savefig('graphs/textural/pca_34.png')
-
-# ============================ Kernel PCA ============================ #
-
-# PROJECT
-kpca = KernelPCA(n_components=2, kernel='rbf', gamma=10)
-X_train_kpca = kpca.fit_transform(X_train_std)
-X_val_kpca = kpca.transform(X_val_std)
-
-# PLOT PROJECTION ON PC 1 AND 2
-fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(14,10))
-colors = ['r','g','b','orange']
-markers = ['+','x','o', '^']
-for l, c, m in zip(np.unique(y_train), colors,markers):
-    ax.scatter(X_train_kpca[y_train==l,0],
-               X_train_kpca[y_train==l,1],
-               color=c,marker=m, label="cat %d" % l)
-
-ax.set_xlabel('KPC 1', fontweight="bold", fontsize=20)
-ax.set_ylabel('KPC 2', fontweight="bold", fontsize=20)
-ax.legend(loc='best', fontsize=20)
-#ax.set_xlim([-10, 10])
-#ax.set_ylim([-10, 10])
-ax.set_title("Projection des variables de texture sur KPC 1 et 2", fontweight="bold", fontsize=25)
-plt.savefig('graphs/textural/kpca_12.png')
-
-# ========================== DATA SPLIT ========================== #
+# =========================== DATA SPLIT ============================ #
 # Build train/test splits at patient level
 kf = KFold(n_splits=opt.n_splits, shuffle=True, random_state=0)
 cv_splits = []
-for train_pat, test_pat in kf.split(data_textural.patient.unique()):
-    train_idx = data_textural.loc[data_textural.patient.isin(train_pat)].index
-    test_idx = data_textural.loc[data_textural.patient.isin(test_pat)].index
+for train_pat, test_pat in kf.split(data_merge_train.patient.unique()):
+    train_idx = data_merge_train.loc[data_merge_train.patient.isin(train_pat)].index
+    test_idx = data_merge_train.loc[data_merge_train.patient.isin(test_pat)].index
     cv_splits.append((train_idx, test_idx))
 
-# ========================== MODEL AND GRIDSEARCH ========================== #
-# Build the pipeline and the gridsearch
-pipe = Pipeline([('scaler', Scaler(mean=True, norm_ord=2)), ('clf', SVC())])
-param_grid = {'clf__kernel' : ['linear', 'rbf'], 
-              'clf__C' : np.logspace(-2, 2, num=5)}
+###########################################################################
+# ========================== CLASSIFY THE DATA ========================== #
+###########################################################################
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 
-gs = GridSearchCV(estimator=pipe,
-                 param_grid=param_grid,
-                 scoring='accuracy',
-                 cv=cv_splits)
+log_train_file = "./log/%s/logs_clf_train_%s_%s.csv" % (opt.model_type, opt.model_name, opt.optimizer)
+log_test_file = "./log/%s/logs_clf_test_%s_%s.csv" % (opt.model_type, opt.model_name, opt.optimizer)
 
-# ========================== FIT AND CURVES ========================== #
-gs.fit(X, y)
+df_logs_train = pd.DataFrame(columns=['model', 'clf', 'features', 'params', 'random_state', 'date', 'acc',
+                                      'pred_0_0', 'pred_0_1', 'pred_0_2', 'pred_0_3',
+                                      'pred_1_0', 'pred_1_1', 'pred_1_2', 'pred_1_3', 
+                                      'pred_2_0', 'pred_2_1', 'pred_2_2', 'pred_2_3', 
+                                      'pred_3_0', 'pred_3_1', 'pred_3_2', 'pred_3_3'])
 
+df_logs_test = pd.DataFrame(columns=['model', 'clf', 'features', 'params', 'random_state', 'date', 'acc',
+                                     'pred_0_0', 'pred_0_1', 'pred_0_2', 'pred_0_3',
+                                     'pred_1_0', 'pred_1_1', 'pred_1_2', 'pred_1_3', 
+                                     'pred_2_0', 'pred_2_1', 'pred_2_2', 'pred_2_3', 
+                                     'pred_3_0', 'pred_3_1', 'pred_3_2', 'pred_3_3'])
+
+value_meter_train = AccuracyValueMeter(opt.n_classes)
+value_meter_test = AccuracyValueMeter(opt.n_classes)
+
+for features, X_train, X_test in zip(['textural', 'high_level', 'merge'], 
+                                     [X_text_train, X_hl_train, X_merge_train], 
+                                     [X_text_test, X_hl_test, X_merge_test]):
+
+    print("FEATURES %s" % features)
+    
+    # ========================== LOGISTIC REGRESSION ========================== #
+    print("\n")
+    print("="*40)
+    print("Classifying with logistic regression...")
+    print("="*40)
+    print("\n")
+    
+    # Reset the meters for accuracy across each cat
+    value_meter_train.reset()
+    value_meter_test.reset()
+    
+    clf_name = 'logistic regression'
+    clf = LogisticRegression(fit_intercept=True,
+                             penalty='l2',
+                             max_iter=300,
+                             tol=1e-1,
+                             multi_class='ovr',
+                             solver='lbfgs')
+    
+    param_grid = {'C' : np.logspace(-1, 1, num=10)}
+    gs = GridSearchCV(estimator=clf,
+                      param_grid=param_grid,
+                      scoring='accuracy',
+                      n_jobs=opt.n_jobs,
+                      verbose=opt.verbose,
+                      return_train_score=True,
+                      cv=cv_splits)
+    
+    t1 = time.time()
+    gs.fit(X_train, y_train)
+    t2 = time.time()
+    print("Fitting time %.3g s" % (t2-t1))
+    print("BEST PARAMETERS from gridsearch logistic regression %s" % gs.best_params_) 
+    
+    for param, train_score, test_score in zip(gs.cv_results_['params'], gs.cv_results_['mean_train_score'],
+                                              gs.cv_results_['mean_test_score']):
+        param_print = {k:round(v,3) if isinstance(v,float) else v for k,v in param.items()}
+        print("For params %s mean train score %.3g and mean test score %.3g" % (param_print, train_score, test_score))
+    
+    y_pred_train = gs.predict(X_train)
+    y_pred_test = gs.predict(X_test)
+    print("Precision on the train set %.3f" % np.mean(y_pred_train==y_train))
+    print("Precision on the test set %.3f" % np.mean(y_pred_test==y_test))
+    
+    value_meter_train.update(y_pred_train, y_train, y_train.shape[0])
+    value_meter_test.update(y_pred_test, y_test, y_test.shape[0])
+    best_param_print = {k:round(v,3) if isinstance(v,float) else v for k,v in gs.best_params_.items()}
+    
+    row_train = {'model': opt.model_name, 
+                 'clf': clf_name,
+                 'features': features,
+                 'params': best_param_print,
+                 'random_state': opt.random_state,
+                 'date': get_time(), 
+                 'acc': value_meter_train.acc}
+    
+    for i in range(opt.n_classes):
+        for j in range(opt.n_classes):
+            row_train["pred_%d_%d" % (i, j)] = value_meter_train.sum[i][j]
+    
+    df_logs_train = df_logs_train.append(row_train, ignore_index=True)
+    df_logs_train.to_csv(log_train_file, header=True, index=False)                
+    
+    row_test = {'model': opt.model_name, 
+                'clf': clf_name,
+                'features': features,
+                'params': best_param_print,
+                'random_state': opt.random_state,
+                'date': get_time(), 
+                'acc': value_meter_test.acc}
+    
+    for i in range(opt.n_classes):
+        for j in range(opt.n_classes):
+            row_test["pred_%d_%d" % (i, j)] = value_meter_test.sum[i][j]
+    
+    df_logs_test = df_logs_test.append(row_test, ignore_index=True)
+    df_logs_test.to_csv(log_test_file, header=True, index=False)        
+    
+    # ========================== RANDOM FOREST ========================== #
+    print("\n")
+    print("="*40)
+    print("Classifying with random forest...")
+    print("="*40)
+    print("\n")
+    
+    # Reset the meters for accuracy across each cat
+    value_meter_train.reset()
+    value_meter_test.reset()
+    
+    clf_name = 'random forest'
+    clf = RandomForestClassifier(random_state=opt.random_state,
+                                 max_features='sqrt')
+    
+    param_grid = {'n_estimators' : [3, 4, 5, 8, 10],
+                  'max_depth': [2, 3, 4, 5, 6, 7]}
+    gs = GridSearchCV(estimator=clf,
+                      param_grid=param_grid,
+                      scoring='accuracy',
+                      n_jobs=opt.n_jobs,
+                      verbose=opt.verbose,
+                      return_train_score=True,
+                      cv=cv_splits)
+    
+    t1 = time.time()
+    gs.fit(X_train, y_train)
+    t2 = time.time()
+    print("Fitting time %.3g s" % (t2-t1))
+    print("BEST PARAMETERS from gridsearch random forest %s" % gs.best_params_) 
+    
+    for param, train_score, test_score in zip(gs.cv_results_['params'], gs.cv_results_['mean_train_score'],
+                                              gs.cv_results_['mean_test_score']):
+        param_print = {k:round(v,3) if isinstance(v,float) else v for k,v in param.items()}
+        print("For params %s mean train score %.3g and mean test score %.3g" % (param_print, train_score, test_score))
+    
+    y_pred_train = gs.predict(X_train)
+    y_pred_test = gs.predict(X_test)
+    print("Precision on the train set %.3f" % np.mean(y_pred_train==y_train))
+    print("Precision on the test set %.3f" % np.mean(y_pred_test==y_test))
+    
+    value_meter_train.update(y_pred_train, y_train, y_train.shape[0])
+    value_meter_test.update(y_pred_test, y_test, y_test.shape[0])
+    best_param_print = {k:round(v,3) if isinstance(v,float) else v for k,v in gs.best_params_.items()}
+    
+    row_train = {'model': opt.model_name, 
+                 'clf': clf_name,
+                 'features': features,
+                 'params': best_param_print,
+                 'random_state': opt.random_state,
+                 'date': get_time(), 
+                 'acc': value_meter_train.acc}
+    
+    for i in range(opt.n_classes):
+        for j in range(opt.n_classes):
+            row_train["pred_%d_%d" % (i, j)] = value_meter_train.sum[i][j]
+    
+    df_logs_train = df_logs_train.append(row_train, ignore_index=True)
+    df_logs_train.to_csv(log_train_file, header=True, index=False)                
+    
+    row_test = {'model': opt.model_name, 
+                'clf': clf_name,
+                 'features': features,
+                'params': best_param_print,
+                'random_state': opt.random_state,
+                'date': get_time(), 
+                'acc': value_meter_test.acc}
+    
+    for i in range(opt.n_classes):
+        for j in range(opt.n_classes):
+            row_test["pred_%d_%d" % (i, j)] = value_meter_test.sum[i][j]
+    
+    df_logs_test = df_logs_test.append(row_test, ignore_index=True)
+    df_logs_test.to_csv(log_test_file, header=True, index=False)        
 

@@ -70,88 +70,6 @@ class RandomCropCircle(object):
 
         return img.crop((x, y, x + tw, y + th))
 
-#class MaunaKea(data.Dataset):
-#    def __init__(self, root_img="./data/TrainingSetImagesDir", label_file="./data/TrainingSet_20aimVO.csv", 
-#                 test_size=0.2, train=True, data_aug=0, random_state=0):
-#        self.root_img = root_img
-#        self.label_img = pd.read_csv(label_file)
-#        self.test_size = test_size
-#        self.train = train
-#        self.data_aug = data_aug
-#        self.random_state = random_state
-#        self._data = []
-#
-#        if self.data_aug:
-#            self.transforms = transforms.Compose(
-#                [RandomCropCircle(224, radius),
-#                 transforms.RandomHorizontalFlip(),
-#                 transforms.ToTensor()])
-#        else:
-#            self.transforms = transforms.Compose(
-#                [transforms.CenterCrop(456),
-#                 transforms.ToTensor()])
-#
-##        Wrong way to split
-##        train_idx, test_idx = train_test_split(self.label_img.index, 
-##                                               test_size=self.test_size,
-##                                               stratify=self.label_img.class_number,
-##                                               random_state=self.random_state)
-#
-#        patient_col = self.label_img.image_filename.apply(lambda x: x.split("_")[-1].split(".")[0]).astype(int)
-#        self.label_img.insert(0, column='patient', value=patient_col)     
-#
-#        self._train_pat, self._test_pat = train_test_split(self.label_img.patient.unique(), 
-#                                                           test_size=self.test_size,
-#                                                           random_state=self.random_state)
-#
-#        for _, row in self.label_img.iterrows():
-#            if self.train and row['patient'] in self._train_pat:
-#                path = os.path.join(root_img, row['image_filename'])
-#                label = row['class_number']
-#                self._data.append((path, label))
-#            elif not self.train and row['patient'] in self._test_pat:
-#                path = os.path.join(root_img, row['image_filename'])
-#                label = row['class_number']
-#                self._data.append((path, label))
-#                
-#    def __getitem__(self, index):
-#        path, label = self._data[index]
-#        img = self.transforms(Image.open(path).convert('L'))
-#        return img, label
-#
-#    def __len__(self):
-#        return len(self._data)
-#
-#class MaunaKeaTest(data.Dataset):
-#    def __init__(self, root_img="./data/TestSetImagesDir/part_1", data_aug=0):
-#        self.root_img = root_img
-#        self.data_aug = data_aug
-#        self._data = []
-#
-#        if self.data_aug:
-#            self.transforms = transforms.Compose(
-#                [RandomCropCircle(224, radius),
-#                 transforms.RandomHorizontalFlip(),
-#                 transforms.ToTensor()])
-#        else:
-#            self.transforms = transforms.Compose(
-#                [transforms.CenterCrop(456),
-#                 transforms.ToTensor()])
-#        
-#        self._fn_img = os.listdir(self.root_img)
-#        self._fn_img = [fn for fn in self._fn_img if '.png' in fn]
-#        for fn in self._fn_img:
-#            path = os.path.join(root_img, fn)
-#            self._data.append((fn, path))
-#        
-#    def __getitem__(self, index):
-#        fn, path = self._data[index]
-#        img = self.transforms(Image.open(path).convert('L'))
-#        return fn, img
-#
-#    def __len__(self):
-#        return len(self._data)
-
 class MaunaKea(data.Dataset):
     def __init__(self, root_img="./data/TrainingSetImagesDir", label_file="./data/TrainingSet_20aimVO.csv", 
                  test_size=0.2, train=True, data_aug=0, crop_size=224, rgb=1, img_size=224, random_state=0):
@@ -253,10 +171,9 @@ class MaunaKeaTest(data.Dataset):
 # Transactions on systems, Man and Cybernetics, Vol 1973
 
 class MaunaTexturalFeatures(object):
-    def __init__(self, root_img="./data/TrainingSetImagesDir", label_file="./data/TrainingSet_20aimVO.csv", 
-                 feature_mean=True, feature_range=True, feature_std=True):
+    def __init__(self, root_img="./data/TrainingSetImagesDir", train=True, feature_mean=True, feature_range=True, feature_std=True):
         self.root_img = root_img
-        self.label_img = pd.read_csv(label_file)
+        self.train = train
         self.feature_mean = feature_mean
         self.feature_range = feature_range
         self.feature_std = feature_std
@@ -266,8 +183,14 @@ class MaunaTexturalFeatures(object):
         # As R is 278, this is approx. 395
         self.transforms = transforms.Compose(
             [transforms.CenterCrop(395)])
-
-        patient_col = self.label_img.image_filename.apply(lambda x: x.split("_")[-1].split(".")[0]).astype(int)
+        
+        if self.train:
+            self.label_img = pd.read_csv("./data/TrainingSet_20aimVO.csv")
+        else:
+            fn_img = os.listdir(self.root_img)
+            fn_img = [fn for fn in fn_img if '.png' in fn]
+            self.label_img = pd.DataFrame({'image_filename': fn_img})
+        patient_col = self.label_img.image_filename.apply(lambda x: x.split("_")[-1].split(".")[0]).astype(int)        
         self.label_img.insert(0, column='patient', value=patient_col)     
 
     def get_data(self):
@@ -277,7 +200,9 @@ class MaunaTexturalFeatures(object):
            data_row = {}
            data_row['patient'] = row['patient']
            data_row['image_filename'] = row['image_filename']
-           data_row['label'] = row['class_number']
+           
+           if self.train:
+               data_row['class_numer'] = row['class_number']
 
            path = os.path.join(self.root_img, row['image_filename'])
            img = np.array(self.transforms(Image.open(path).convert('L')))

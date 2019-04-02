@@ -12,32 +12,9 @@ import torch.nn.functional as F
 import torchvision
 import numpy as np
 
-#class BenchMark(nn.Module):
-#    def __init__(self, n_classes):
-#        super(BenchMark, self).__init__()
-#        self.n_classes = n_classes
-#        self.conv1 = nn.Conv2d(in_channels=1, out_channels=3, kernel_size=3, stride=2, padding=1)      # (3, 228, 228)
-#        self.pool1 = nn.MaxPool2d(kernel_size=2)                                                       # (3, 114, 114)
-#        self.drop1 = nn.Dropout2d(p=0.2)
-#        self.conv2 = nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, stride=2, padding=1)     # (16, 57, 57)
-#        self.pool2 = nn.MaxPool2d(kernel_size=2)                                                       # (16, 28, 28)
-#        self.drop2 = nn.Dropout2d(p=0.2)
-#        self.conv3 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=2, padding=1)    # (32, 14, 14)
-#        self.pool3 = nn.MaxPool2d(kernel_size=2)                                                       # (32, 7, 7)
-#        self.drop3 = nn.Dropout2d(p=0.2)
-#        
-#        self.fc1 = nn.Linear(1568, n_classes)
-#        self.softmax = nn.Softmax()
-#
-#    def forward(self, x):
-#        # input is (bs, 1, 456, 456)
-#        x = self.pool1(self.drop1(F.relu(self.conv1(x))))
-#        x = self.pool2(self.drop2(F.relu(self.conv2(x))))
-#        x = self.pool3(self.drop3(F.relu(self.conv3(x))))
-#    
-#        x = x.view(x.size(0), -1)
-#        x= self.softmax(self.fc1(x))
-#        return x
+#########################
+# Simple architectures
+#########################
 
 class MaunaNet2(nn.Module):
     def __init__(self, n_classes):
@@ -62,6 +39,16 @@ class MaunaNet2(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.fc(x)
         return x
+
+    def get_features(self, x):
+        # input is (bs, 3, 224, 224)
+        x = self.pool1(F.relu(self.bn1(self.conv1(x))))
+        x = self.pool2(F.relu(self.bn2(self.conv2(x))))
+        
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        return x
+
 
 class MaunaNet3(nn.Module):
     def __init__(self, n_classes):
@@ -89,6 +76,16 @@ class MaunaNet3(nn.Module):
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         x = self.fc(x)
+        return x
+
+    def get_features(self, x):
+        # input is (bs, 3, 224, 224)
+        x = self.pool1(F.relu(self.bn1(self.conv1(x))))
+        x = self.pool2(F.relu(self.bn2(self.conv2(x))))
+        x = self.pool3(F.relu(self.bn3(self.conv3(x))))
+        
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
         return x
 
 class MaunaNet4(nn.Module):
@@ -120,6 +117,17 @@ class MaunaNet4(nn.Module):
         x = self.fc(x)
         return x
 
+    def get_features(self, x):
+        # input is (bs, 3, 224, 224)
+        x = self.pool1(F.relu(self.bn1(self.conv1(x))))
+        x = F.relu(self.bn2(self.conv2(x)))
+        x = F.relu(self.bn3(self.conv3(x)))
+        x = F.relu(self.bn4(self.conv4(x)))
+        
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        return x
+
 class BenchMark(nn.Module):
     def __init__(self, n_classes):
         super(BenchMark, self).__init__()
@@ -135,7 +143,6 @@ class BenchMark(nn.Module):
         self.drop3 = nn.Dropout2d(p=0.2)
         
         self.fc1 = nn.Linear(576, n_classes)
-        self.softmax = nn.Softmax()
 
     def forward(self, x):
         # input is (bs, 1, 224, 224)
@@ -145,40 +152,6 @@ class BenchMark(nn.Module):
     
         x = x.view(x.size(0), -1)
         return x
-
-#class MaunaNet4(nn.Module):
-#    def __init__(self, n_classes):
-#        super(MaunaNet4, self).__init__()
-#        self.n_classes = n_classes
-#        self.conv1 = nn.Conv2d(in_channels=1, out_channels=3, kernel_size=3, stride=2, padding=1)      # (3, 228, 228)
-#        self.bn1 = nn.BatchNorm2d(3)
-#        self.pool1 = nn.MaxPool2d(kernel_size=2)                                                       # (3, 114, 114)
-#        self.conv2 = nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, stride=2, padding=1)     # (64, 57, 57)
-#        self.bn2 = nn.BatchNorm2d(64)
-#        self.pool2 = nn.MaxPool2d(kernel_size=2)                                                       # (64, 29, 29)
-#        self.conv3 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, padding=1)   # (128, 15, 15)
-#        self.bn3 = nn.BatchNorm2d(128)
-#        self.pool3 = nn.MaxPool2d(kernel_size=2)                                                       # (128, 8, 8)
-#        self.conv4 = nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, padding=1)  # (256, 4, 4)
-#        self.bn4 = nn.BatchNorm2d(256)
-#        self.pool4 = nn.MaxPool2d(kernel_size=2)                                                       # (256, 2, 2)
-#        
-#        self.avgpool = nn.AvgPool2d(2)                                                                 # (256, 1, 1)
-#        self.fc1 = nn.Linear(256, n_classes)
-#        self.softmax = nn.Softmax()
-#
-#    def forward(self, x):
-#        # input is (bs, 1, 456, 456)
-#        x = self.pool1(F.relu(self.bn1(self.conv1(x))))
-#        x = self.pool2(F.relu(self.bn2(self.conv2(x))))
-#        x = self.pool3(F.relu(self.bn3(self.conv3(x))))
-#        x = self.pool4(F.relu(self.bn4(self.conv4(x))))
-#    
-#        x = self.avgpool(x)
-#        x = x.view(x.size(0), -1)
-#        x = self.softmax(self.fc1(x))
-#        return x
-
 
 #########################
 # Classical architectures
@@ -226,6 +199,18 @@ class AlexNet(nn.Module):
         x = self.fc3(x)
         return x
 
+    def get_features(self,x):
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
+        x = self.conv4(x)
+        x = self.conv5(x)
+
+        x = x.view(x.size(0), 256 * 6 * 6)
+        x = self.fc1(x)
+        x = self.fc2(x)
+        return x
+
 class ResNet18(nn.Module):
     def __init__(self, n_classes, fz_depth):
         super(ResNet18,self).__init__()
@@ -263,38 +248,12 @@ class ResNet18(nn.Module):
         x = self.fc1(x)
         return x
 
-#class AlexNet(nn.Module):
-#    def __init__(self, n_classes=4):
-#        super(AlexNet, self).__init__()
-#        self.features = nn.Sequential(
-#            nn.Conv2d(1, 64, kernel_size=11, stride=4, padding=2),
-#            nn.ReLU(inplace=True),
-#            nn.MaxPool2d(kernel_size=3, stride=2),
-#            nn.Conv2d(64, 192, kernel_size=5, padding=2),
-#            nn.ReLU(inplace=True),
-#            nn.MaxPool2d(kernel_size=3, stride=2),
-#            nn.Conv2d(192, 384, kernel_size=3, padding=1),
-#            nn.ReLU(inplace=True),
-#            nn.Conv2d(384, 256, kernel_size=3, padding=1),
-#            nn.ReLU(inplace=True),
-#            nn.Conv2d(256, 256, kernel_size=3, padding=1),
-#            nn.ReLU(inplace=True),
-#            nn.MaxPool2d(kernel_size=3, stride=2),
-#        )
-#        self.avgpool = nn.AdaptiveAvgPool2d((6, 6))
-#        self.classifier = nn.Sequential(
-#            nn.Dropout(),
-#            nn.Linear(256 * 6 * 6, 4096),
-#            nn.ReLU(inplace=True),
-#            nn.Dropout(),
-#            nn.Linear(4096, 4096),
-#            nn.ReLU(inplace=True),
-#            nn.Linear(4096, n_classes),
-#        )
-#
-#    def forward(self, x):
-#        x = self.features(x)
-#        x = self.avgpool(x)
-#        x = x.view(x.size(0), 256 * 6 * 6)
-#        x = self.classifier(x)
-#        return x
+    def get_features(self,x):
+        x = self.conv1(x)
+        x = self.basicblock1(x)
+        x = self.basicblock2(x)
+        x = self.basicblock3(x)
+        x = self.avgpool(x)
+        
+        x = x.view(x.size(0), -1)
+        return x
