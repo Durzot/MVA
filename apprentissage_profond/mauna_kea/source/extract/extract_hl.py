@@ -20,6 +20,7 @@ sys.path.append("./source")
 from auxiliary.dataset import *
 from auxiliary.utils import *
 from models.models_cnn import *
+from models.models_cnmp import *
 
 import matplotlib
 matplotlib.use('TkAgg')
