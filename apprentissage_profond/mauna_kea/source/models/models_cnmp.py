@@ -44,3 +44,15 @@ class CodingNetwork(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.fc1(x)
         return x
+
+    def get_features(self, x):
+        # input is (bs, 1, 140, 140)
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = self.pool2(F.relu(self.bn2(self.conv2(x))))
+        x = self.pool3(F.relu(self.bn3(self.conv3(x))))
+        x = F.relu(self.bn4(self.conv4(x)))
+        x = F.relu(self.bn5(self.conv5(x)))
+        x = F.relu(self.bn6(self.conv6(x)))
+        
+        x = x.view(x.size(0), -1)
+        return x
