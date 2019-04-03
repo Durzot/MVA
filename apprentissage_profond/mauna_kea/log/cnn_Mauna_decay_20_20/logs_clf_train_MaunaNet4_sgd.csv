@@ -1,0 +1,7 @@
+model,clf,features,params,random_state,date,acc,pred_0_0,pred_0_1,pred_0_2,pred_0_3,pred_1_0,pred_1_1,pred_1_2,pred_1_3,pred_2_0,pred_2_1,pred_2_2,pred_2_3,pred_3_0,pred_3_1,pred_3_2,pred_3_3
+MaunaNet4,logistic regression,textural,{'C': 100.0},412,2019-04-02 17:34,0.506343863283273,694,170,26,268,261,1697,723,901,81,41,173,63,275,720,284,1347
+MaunaNet4,random forest,textural,"{'max_depth': 7, 'n_estimators': 20}",412,2019-04-02 17:34,0.6692128430864837,774,59,11,42,324,2018,421,664,88,141,573,69,125,410,201,1804
+MaunaNet4,logistic regression,high_level,{'C': 0.01},412,2019-04-02 17:37,0.8843863283272916,1170,61,24,67,31,2361,179,121,7,86,945,36,103,120,58,2355
+MaunaNet4,random forest,high_level,"{'max_depth': 7, 'n_estimators': 30}",412,2019-04-02 17:39,0.9207664422578975,1241,34,16,33,13,2435,151,78,3,40,992,24,54,119,47,2444
+MaunaNet4,logistic regression,merge,{'C': 0.016},412,2019-04-02 17:45,0.8912480580010357,1178,53,22,57,30,2381,166,119,7,79,961,39,96,115,57,2364
+MaunaNet4,random forest,merge,"{'max_depth': 8, 'n_estimators': 30}",412,2019-04-02 17:46,0.9447177628171932,1260,18,12,15,11,2503,124,52,2,26,1034,12,38,81,36,2500

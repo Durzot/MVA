@@ -54,26 +54,23 @@ for cl in range(n_classes):
         fig.savefig("graphs/class_%d/samples_class_%d_part_%d.png" % (cl, cl, n), format="png")
         plt.close(fig)
 
-fn_img = "./data/TrainingSetImagesDir/im_0_0.png"
-img = Image.open(fn_img).convert("L")
-img = np.array(img)
+fig, ax = plt.subplots(nrows=4, ncols=3, figsize=(16, 19))
+for cl in range(n_classes):
+    mask = label_img.class_number == cl
+    rand_rows = np.random.permutation(sum(mask))
+    label_slct = pd.DataFrame.copy(label_img[mask].reset_index(drop=True))
 
-dataset = MaunaTexturalFeatures()
-X = dataset.get_data()
-
-X_copy = pd.DataFrame.copy(X)
-
-columns = X.columns
-columns_new = []
-for x in X.columns:
-    if 'range' in x:
-        x = x.replace('range', 'std')
-    columns_new.append(x)
-        
-X.columns = columns_new
-
-model = models.__dict__['alexnet'](pretrained=True)
-model = list(model.children())[0]
-output = model(data)
+    for n in range(3):
+        label_shuffle = pd.DataFrame.copy(label_slct.iloc[rand_rows[n*16:(n+1)*16]]).reset_index(drop=True)
+    
+        for i, row in label_shuffle.iterrows():
+            path = os.path.join(root_img, row["image_filename"])
+            img = Image.open(path).convert('L')
+            ax[cl][n].imshow(img)
+            ax[cl][n].axis('off')
+            ax[cl][n].set_title("%s class %d" % (row["image_filename"], cl), fontsize=20, fontweight="bold")
+    
+fig.savefig("graphs/samples_all_class.png", format="png")
+plt.close(fig)
 
 

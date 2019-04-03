@@ -135,7 +135,7 @@ for features, X_train, X_test in zip(['textural', 'high_level', 'merge'],
                              multi_class='ovr',
                              solver='lbfgs')
     
-    param_grid = {'C' : np.logspace(-1, 1, num=10)}
+    param_grid = {'C' : np.logspace(-2, 2, num=20)}
     gs = GridSearchCV(estimator=clf,
                       param_grid=param_grid,
                       scoring='accuracy',
@@ -209,8 +209,8 @@ for features, X_train, X_test in zip(['textural', 'high_level', 'merge'],
     clf = RandomForestClassifier(random_state=opt.random_state,
                                  max_features='sqrt')
     
-    param_grid = {'n_estimators' : [3, 4, 5, 8, 10],
-                  'max_depth': [2, 3, 4, 5, 6, 7]}
+    param_grid = {'n_estimators' : [4, 5, 8, 10, 20, 30],
+                  'max_depth': [2, 3, 4, 5, 6, 7, 8]}
     gs = GridSearchCV(estimator=clf,
                       param_grid=param_grid,
                       scoring='accuracy',
